@@ -46,12 +46,12 @@ bloquear o resto.
 - [x] 4.11 Morte: joelhos, queda, espada cai, chapéu rola; morte do jogador em câmera lenta e dessaturada.
 - [x] 4.12 Bots novos (esquiva perfeita + foco, travar espadas) e rebalanceamento. Metas: só ataca e só defende perdem; humano ±120 ms vence os primeiros quase sempre e o duelo ~50%; nenhuma vitória sem aparo.
 
-### Fase 5 — interface
-- [ ] Menu de pausa (continuar, controles, ajustes, reiniciar encontro).
-- [ ] Dicas com desenho do botão (teclado/mouse/toque).
-- [ ] Barras só em combate; vitalidade como traço de pincel.
-- [ ] Tela de título cinematográfica com dificuldade (fácil/normal/difícil).
-- [ ] UI de foco e de escolha de melhoria no mesmo estilo.
+### Fase 5 — interface ✅
+- [x] Menu de pausa (continuar, controles, ajustes, reiniciar encontro).
+- [x] Dicas com desenho do botão (teclado/mouse/toque).
+- [x] Barras só em combate; vitalidade como traço de pincel.
+- [x] Tela de título cinematográfica com dificuldade (fácil/normal/difícil).
+- [x] UI de foco e de escolha de melhoria no mesmo estilo.
 Pronto: screenshots de cada tela em PC e celular (retrato bloqueado, paisagem).
 
 ### Fase 3b — personagem 3D

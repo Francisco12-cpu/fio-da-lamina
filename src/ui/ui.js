@@ -1,3 +1,4 @@
+import { fmt } from './glyphs.js';
 import { Lock } from '../game/lockon.js';
 import { _v } from '../combat/moves.js';
 import { IS_TOUCH } from '../core/config.js';
@@ -61,10 +62,10 @@ export const UI = {
   good() { this.goodT = 0.35; this.bBlock.classList.add('good'); },
   fadeEl: document.getElementById('fade'), fadeText: document.getElementById('fadeText'),
   timer: 0, sticky: false, flashT: 0, hurtK: 0,
-  hint(text, dur = 4) { if (this.sticky) return; this.hintEl.textContent = text; this.hintEl.classList.add('on'); this.timer = dur; },
+  hint(text, dur = 4) { if (this.sticky) return; this.hintEl.innerHTML = fmt(text); this.hintEl.classList.add('on'); this.timer = dur; },
   stick(text, sub) {
     this.sticky = true; this.timer = 0;
-    this.hintEl.textContent = text;
+    this.hintEl.innerHTML = fmt(text);
     if (sub) { const s = document.createElement('small'); s.textContent = sub; this.hintEl.appendChild(s); }
     this.hintEl.classList.add('on');
   },
@@ -75,7 +76,7 @@ export const UI = {
   update(dt, player, t) {
     if (this.timer > 0) { this.timer -= dt; if (this.timer <= 0 && !this.sticky) this.hintEl.classList.remove('on'); }
     if (this.flashT > 0) { this.flashT -= dt; if (this.flashT <= 0) this.flashEl.classList.remove('on'); }
-    this.vitEl.classList.toggle('on', Input.enabled && (player.drawn || player.health < player.maxHealth || player.focus > 0));
+    this.vitEl.classList.toggle('on', Input.enabled && player.alive && (this.combat || player.wounded));
     this.drawVitals(player);
     document.body.classList.toggle('wounded', player.wounded);
     this.hurtK = Math.max(0, this.hurtK - dt * 2.5);
@@ -83,7 +84,7 @@ export const UI = {
     this.hurtEl.style.opacity = Math.max(this.hurtK, wounded).toFixed(3);
     // estabilidade do jogador (embaixo) e dos inimigos (sobre a cabeça)
     const ps = player.stab / player.maxStab;
-    this.pstabEl.classList.toggle('on', Input.enabled && player.alive && (player.drawn || ps < 0.999));
+    this.pstabEl.classList.toggle('on', Input.enabled && player.alive && (this.combat || ps < 0.999));
     this.pstabEl.classList.toggle('low', ps < 0.3); this.pstabEl.classList.toggle('broken', player.state === 'broken');
     this.pstabFill.style.transform = `scaleX(${clamp(ps, 0, 1).toFixed(3)})`;
     this.pTrail = ps < this.pTrail ? damp(this.pTrail, ps, 2.2, dt) : ps;

@@ -47,8 +47,8 @@ export async function launch() {
 }
 
 // abre a página de teste, com pointer lock desligado e fontes externas bloqueadas
-export async function openGame(browser, url, { w = 960, h = 540 } = {}) {
-  const pg = await browser.newPage({ viewport: { width: w, height: h } });
+export async function openGame(browser, url, { w = 960, h = 540, touch = false } = {}) {
+  const pg = await browser.newPage({ viewport: { width: w, height: h }, ...(touch ? { hasTouch: true, isMobile: true, deviceScaleFactor: 2 } : {}) });
   const logs = [];
   pg.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') logs.push(m.type() + ': ' + m.text()); });
   pg.on('pageerror', (e) => logs.push('ERR: ' + String(e.stack || e.message).split(String.fromCharCode(10)).slice(0, 4).join(' <- ')));

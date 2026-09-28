@@ -40,7 +40,7 @@ export const Input = {
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
       if (!this.locked) this.blockMouse = false;
-      if (!this.locked && this.enabled && !IS_TOUCH && !this.noLock) UI.hint('Clique na tela para voltar a controlar a câmera', 3.5);
+      if (!this.locked && this.enabled && !IS_TOUCH && !this.noLock && this.onUnlock) this.onUnlock();
     });
     document.addEventListener('pointerlockerror', () => { this.noLock = true; });
     document.addEventListener('mousemove', (e) => {

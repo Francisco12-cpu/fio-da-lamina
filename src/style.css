@@ -136,22 +136,46 @@ body.dying canvas#c { filter: saturate(0.1) contrast(1.06) brightness(0.88); tra
 #menuBtn { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); width: 38px; height: 38px;
   border-radius: 50%; border: 1px solid rgba(242, 231, 209, 0.3); background: rgba(14, 9, 4, 0.45); color: var(--ink); display: grid; place-items: center; padding: 0; cursor: pointer; z-index: 3; }
 #menuBtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
-#start {
-  position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
+/* título: a câmera viaja atrás; o texto fica no canto, como numa abertura de filme */
+#start { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; z-index: 4;
   padding: calc(6vh + env(safe-area-inset-top, 0px)) calc(6vw + env(safe-area-inset-right, 0px)) calc(7vh + env(safe-area-inset-bottom, 0px)) calc(6vw + env(safe-area-inset-left, 0px));
-  background: linear-gradient(to top, rgba(24, 15, 6, 0.8) 0%, rgba(24, 15, 6, 0.36) 40%, rgba(24, 15, 6, 0) 64%);
-  color: var(--ink); cursor: pointer; transition: opacity 0.7s ease;
-}
+  background: linear-gradient(to top, rgba(24, 15, 6, 0.82) 0%, rgba(24, 15, 6, 0.4) 38%, rgba(24, 15, 6, 0) 62%), linear-gradient(to right, rgba(24, 15, 6, 0.35), rgba(24,15,6,0) 45%);
+  color: var(--ink); transition: opacity 0.9s ease; }
 #start.gone { opacity: 0; pointer-events: none; }
 #start h1 { font-family: 'Shippori Mincho', 'Iowan Old Style', Georgia, serif; font-weight: 700;
-  font-size: clamp(42px, 8vw, 108px); line-height: 0.92; letter-spacing: -0.015em; margin: 0 0 0.26em; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35); }
-#start .sub, #start .ctl { font-family: 'Zen Kaku Gothic New', system-ui, sans-serif; max-width: 46ch; margin: 0.25em 0;
-  font-size: clamp(13px, 1.35vw, 17px); line-height: 1.6; color: var(--ink-dim); }
-#start .go { margin-top: 1.2em; align-self: flex-start; font-family: 'Shippori Mincho', Georgia, serif; font-size: clamp(18px, 1.9vw, 23px);
-  border-bottom: 1px solid var(--straw); padding-bottom: 0.12em; }
-#start:focus-visible .go { outline: 1px solid var(--straw); outline-offset: 6px; }
-@media (max-height: 430px) { #start h1 { font-size: 40px; } #start .sub { display: none; } }
+  font-size: clamp(42px, 8vw, 108px); line-height: 0.92; letter-spacing: -0.015em; margin: 0 0 0.26em; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+  animation: rise 2.2s ease both; }
+#start .sub { font-family: 'Zen Kaku Gothic New', system-ui, sans-serif; max-width: 46ch; margin: 0.25em 0 1em;
+  font-size: clamp(13px, 1.35vw, 17px); line-height: 1.6; color: var(--ink-dim); animation: rise 2.2s 0.3s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+#start .diff { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1.2em; animation: rise 2.2s 0.6s ease both; }
+#start .diff button { background: rgba(14, 9, 4, 0.35); border: 1px solid rgba(242, 231, 209, 0.25); color: var(--ink); border-radius: 3px; padding: 10px 14px; text-align: left; cursor: pointer; width: min(210px, 42vw);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); transition: border-color 0.2s, background 0.2s; }
+#start .diff button b { display: block; font: 700 18px 'Shippori Mincho', Georgia, serif; }
+#start .diff button span { display: block; font: 12px/1.35 'Zen Kaku Gothic New', system-ui, sans-serif; color: var(--ink-dim); margin-top: 3px; }
+#start .diff button[aria-checked="true"] { border-color: var(--straw); background: rgba(199, 162, 90, 0.22); box-shadow: inset 0 -2px 0 var(--straw); }
+#start .acts { display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap; animation: rise 2.2s 0.9s ease both; }
+#start .go, #start .link { background: none; border: 0; color: var(--ink); cursor: pointer; padding: 0 0 0.12em; }
+#start .go { font: clamp(20px, 2.1vw, 26px) 'Shippori Mincho', Georgia, serif; border-bottom: 1px solid var(--straw); }
+#start .link { font: 14px 'Zen Kaku Gothic New', system-ui, sans-serif; color: var(--ink-dim); }
+#start button:focus-visible { outline: 1px solid var(--straw); outline-offset: 5px; }
+@media (max-height: 430px) { #start h1 { font-size: 40px; } #start .sub { display: none; } #start .diff button span { display: none; } #start .diff button { width: auto; padding: 6px 12px; } }
 
+/* pausa: papel escuro, tinta clara */
+#pause, #creditsBox { position: fixed; inset: 0; display: grid; place-items: center; z-index: 6; background: radial-gradient(ellipse at center, rgba(14, 9, 4, 0.6), rgba(14, 9, 4, 0.88)); color: var(--ink); }
+#pause[hidden], #creditsBox[hidden] { display: none; }
+#pause .box, #creditsBox .box { width: min(520px, 92vw); max-height: 88vh; overflow: auto; text-align: center; }
+#pause h2 { font: 700 clamp(30px, 4vw, 46px)/1 'Shippori Mincho', Georgia, serif; margin: 0 0 0.6em; letter-spacing: 0.06em; }
+#pause h3, #creditsBox h3 { font: 700 22px 'Shippori Mincho', Georgia, serif; margin: 0 0 0.8em; }
+#pause .menu { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#pause .menu button, #pause .sec button, #creditsBox button { background: none; border: 0; color: var(--ink); cursor: pointer; font: 20px 'Shippori Mincho', Georgia, serif; padding: 8px 18px; min-width: 60%; border-radius: 2px; }
+#pause .menu button:hover, #pause .menu button:focus-visible, #pause .sec button:focus-visible, #creditsBox button:focus-visible { background: linear-gradient(90deg, rgba(199,162,90,0), rgba(199,162,90,0.22), rgba(199,162,90,0)); outline: none; }
+#pause .sec .list, #creditsBox .list { text-align: left; font: 14px/1.5 'Zen Kaku Gothic New', system-ui, sans-serif; margin-bottom: 14px; }
+.crow { display: grid; grid-template-columns: 8.5em 1fr; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(242, 231, 209, 0.1); font-size: 15px; }
+.crow .ck { text-align: right; }
+.crow .ct { color: var(--ink-dim); }
+#creditsBox .list p { margin: 0.5em 0; color: var(--ink-dim); } #creditsBox .list b { color: var(--ink); }
+#panel { z-index: 7; }
 #tags { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .tag { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; transform: translate(-50%, -100%); transition: opacity 0.3s; }
 .tag .bar { position: relative; width: 70px; height: 5px; background: rgba(12, 8, 4, 0.6); box-shadow: 0 0 6px rgba(0, 0, 0, 0.55); border-radius: 1px; overflow: hidden; }
@@ -205,3 +229,17 @@ body.dying canvas#c { filter: saturate(0.1) contrast(1.06) brightness(0.88); tra
   font: 13px 'Zen Kaku Gothic New', system-ui, sans-serif; color: var(--ink-dim); pointer-events: none; }
 @media (orientation: portrait) and (pointer: coarse) { #rotate { display: block; } }
 @media (prefers-reduced-motion: reduce) { #hint, #start, #loading, #flash { transition: none; } }
+
+/* desenho dos botões nas dicas */
+.glyph { display: inline-flex; align-items: center; gap: 0.18em; vertical-align: -0.28em; margin: 0 0.12em; white-space: nowrap; }
+.glyph .go { font-size: 0.72em; color: var(--ink-dim); margin: 0 0.1em; }
+.glyph .gw { font-size: 0.8em; padding: 0.05em 0.45em; border: 1px solid rgba(242,231,209,0.45); border-radius: 0.8em; color: var(--ink); }
+kbd.gk { display: inline-grid; place-items: center; min-width: 1.45em; height: 1.45em; padding: 0 0.3em; box-sizing: border-box;
+  font: 600 0.72em/1 'Zen Kaku Gothic New', system-ui, sans-serif; color: var(--ink); border: 1.3px solid rgba(242,231,209,0.8);
+  border-bottom-width: 2.6px; border-radius: 0.3em; background: rgba(20, 13, 6, 0.55); }
+kbd.gk.w { padding: 0 0.55em; }
+svg.gm { width: 0.95em; height: 1.3em; fill: none; stroke: var(--ink); stroke-width: 1.4; }
+svg.gm .f { fill: var(--straw); stroke: none; }
+.gt { display: inline-grid; place-items: center; width: 1.55em; height: 1.55em; border-radius: 50%; border: 1.3px solid rgba(242,231,209,0.7); background: rgba(20, 13, 6, 0.5); }
+.gt svg { width: 62%; height: 62%; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+body.paused #hint, body.paused #flash, body.paused #bind { opacity: 0 !important; }

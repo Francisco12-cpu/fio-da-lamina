@@ -121,3 +121,21 @@ Resultado dos bots (6 lutas por combinação; duelo com 24):
   travas vencidas. Decisão: trava vencida conta como defesa habilidosa (é uma janela de tempo de
   ±60 ms), então a meta "nenhuma vitória sem aparo" vira "nenhuma vitória sem aparo ou trava".
 - Bot humano também reage com atraso às fintas (antes ele relia o golpe na hora, sem se enganar).
+
+## 2026-09-28 — Fase 5: interface
+
+- **Menu de pausa** (Esc, perder o controle do mouse ou ☰): continuar, controles, ajustes (o painel
+  antigo, por cima), reiniciar encontro (volta ao último marco e recoloca os inimigos), créditos.
+  O painel de desenvolvimento continua no contador de FPS / tecla P.
+- **Dicas com o desenho do botão** (`src/ui/glyphs.js`): o texto tem marcas `{atk}`, `{block}`…
+  que viram tecla, botão do mouse ou o ícone do botão de toque. Um texto só para PC e celular,
+  com `aria-label` falado para leitor de tela.
+- **Barras só em combate**: estabilidade, vitalidade e foco aparecem com inimigo atento a menos de
+  12 m, trava de espadas, golpe do impasse ou treino com o boneco atacando; também enquanto a
+  estabilidade não voltou toda ou o jogador está ferido.
+- **Vitalidade** como traço de pincel (SVG com marcas de cerdas); ferido, o traço pulsa.
+  **Foco** como pingos de tinta: cheio = tinta escura com borda dourada; vazio = contorno tracejado.
+- **Título cinematográfico**: a câmera viaja devagar e baixo ao lado da trilha, na hora dourada
+  (hora do dia fixa em 42% durante o título). Dificuldade fácil/normal/difícil com descrição,
+  guardada no navegador. Ao começar, corte com meio segundo de escuro para a câmera de jogo.
+- **Maestria** em cartões de papel com tinta e borda dourada; teclas 1 e 2, clique ou toque.

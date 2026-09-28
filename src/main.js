@@ -47,6 +47,9 @@ import { Game } from './game/game.js';
 import { Standoff } from './game/standoff.js';
 import { Training } from './game/training.js';
 import { Lock } from './game/lockon.js';
+import { Title } from './game/title.js';
+import { Pause, CREDITS_HTML, controlsHTML } from './ui/pause.js';
+import { DIFFS } from './combat/rules.js';
 import { Bind } from './combat/bind.js';
 import { Combat } from './combat/combat.js';
 import { Mastery, Rules } from './combat/rules.js';
@@ -71,19 +74,27 @@ Input.init();
 const stats = document.getElementById('stats');
 let fpsAcc = 0, fpsN = 0, fpsT = 0;
 stats.addEventListener('click', (e) => { e.stopPropagation(); Panel.toggle(); });
-document.getElementById('menuBtn').addEventListener('click', (e) => { e.stopPropagation(); Panel.toggle(); });
 
+// ---------- título: dificuldade, controles, créditos ----------
 const startEl = document.getElementById('start');
-document.getElementById('ctlText').textContent = IS_TOUCH
-  ? 'Polegar esquerdo anda (empurre até a borda para correr), polegar direito olha. Botões à direita: golpe, defesa e esquiva.'
-  : 'WASD anda, Shift corre, mouse olha. Botão esquerdo golpeia, direito defende, Espaço esquiva.';
-document.getElementById('goText').textContent = IS_TOUCH ? 'Toque para começar' : 'Clique para começar';
+const DIFF_KEY = 'fio-lamina-dificuldade';
+try { const d = localStorage.getItem(DIFF_KEY); if (d && DIFFS[d]) Rules.diff = d; } catch (e) {}
+const diffBtns = [...startEl.querySelectorAll('[data-d]')];
+const markDiff = () => diffBtns.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.d === Rules.diff)));
+diffBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); Rules.diff = b.dataset.d; markDiff(); try { localStorage.setItem(DIFF_KEY, Rules.diff); } catch (er) {} }));
+markDiff();
+const infoEl = document.getElementById('creditsBox');
+function showInfo(title, html) { infoEl.querySelector('h3').textContent = title; infoEl.querySelector('.list').innerHTML = html; infoEl.hidden = false; infoEl.querySelector('button').focus(); }
+document.getElementById('creditsClose').addEventListener('click', (e) => { e.stopPropagation(); infoEl.hidden = true; });
+document.getElementById('creditsBtn').addEventListener('click', (e) => { e.stopPropagation(); showInfo('Créditos', CREDITS_HTML); });
+document.getElementById('ctlBtn').addEventListener('click', (e) => { e.stopPropagation(); showInfo('Controles', controlsHTML()); });
+document.getElementById('goBtn').addEventListener('click', (e) => { e.stopPropagation(); start(); });
 
 function start() {
   if (Input.enabled || Game.ended) return;
   Input.enabled = true; Stats.startT = clock.elapsed;
   Sound.init();
-  startEl.classList.add('gone');
+  startEl.classList.add('gone'); infoEl.hidden = true;
   if (IS_TOUCH) {
     document.getElementById('touchUI').hidden = false;
     const fs = document.documentElement.requestFullscreen?.();
@@ -93,10 +104,35 @@ function start() {
     if (p && p.catch) p.catch(() => { Input.noLock = true; });
   }
   canvas.focus();
-  Later.after(0.9, () => Training.show());
+  // corta do plano do título para a câmera de jogo por um instante de escuro
+  if (TEST) { Title.end(); rig.snap(player.pos); }
+  else if (Title.active) { UI.fade(true); Later.after(0.55, () => { Title.end(); rig.snap(player.pos); rig.intro = 1; UI.fade(false); }); }
+  Later.after(TEST ? 0.9 : 1.4, () => Training.show());
 }
-startEl.addEventListener('click', start);
-startEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } });
+addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !Input.enabled && !Game.ended && infoEl.hidden) { e.preventDefault(); start(); return; }
+  if (e.key === 'Escape') {
+    if (!infoEl.hidden) { infoEl.hidden = true; return; }
+    if (Panel.open) { Panel.toggle(false); return; }
+    if (Input.enabled) Pause.toggle();
+  }
+});
+
+// ---------- pausa ----------
+function restartEncounter() {
+  const E = Encounters.list.find((x) => x.active && !x.cleared);
+  Encounters.resetActive(); Bind.reset(); Lock.release(player);
+  player.respawn(Encounters.checkpoint, Encounters.cpYaw); rig.snap(player.pos); rig.yaw = Encounters.cpYaw;
+  Game.respawnT = -1; UI.fade(false); UI.flash(E ? 'Encontro reiniciado' : 'De volta ao marco');
+}
+Pause.init({
+  settings: () => Panel.toggle(true),
+  restart: restartEncounter,
+  resume: () => { if (!IS_TOUCH && !Input.noLock) { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => {}); } },
+  canOpen: () => Input.enabled && !Game.ended && !Game.paused,
+});
+Input.onUnlock = () => Pause.open();
+document.getElementById('menuBtn').addEventListener('click', (e) => { e.stopPropagation(); if (Input.enabled) Pause.toggle(); else Panel.toggle(); });
 
 const tmpV = new THREE.Vector3();
 let breathT = 0;
@@ -115,7 +151,7 @@ function frame(now) {
 function update(realDt) {
   clock.elapsed += realDt;
   const t = clock.elapsed;
-  const dt = Panel.open || Game.paused ? 0 : Time.step(realDt);
+  const dt = Panel.open || Game.paused || Pause.isOpen ? 0 : Time.step(realDt);
   advanceSim(dt);
   Later.run();
   SH.uTime.value = simT;
@@ -150,7 +186,8 @@ function update(realDt) {
     }
     if (Lock.target) { Lock.update(player, Encounters.enemies); if (Lock.target) player.draw(); }
   }
-  const fwd = rig.update(realDt, t, player, speed, Encounters.enemies);
+  let fwd = rig.update(realDt, t, player, speed, Encounters.enemies);
+  if (Title.active) fwd = Title.update(realDt);
 
   const T = TIERS[Quality.tier], f2 = tmpV.set(fwd.x, 0, fwd.z).normalize();
   const nc = grassNear.material.uniforms.uCenter.value.set(camera.position.x + f2.x * T.nearR * 0.55, 0, camera.position.z + f2.z * T.nearR * 0.55);
@@ -181,6 +218,8 @@ function update(realDt) {
   TOD.update(realDt, player);
   Glare.update(realDt);
   const fighting = Encounters.enemies.some((e) => e.alive && e.aware && e.pos.distanceTo(player.pos) < 12);
+  // barras e vitalidade só em combate (luta, trava, impasse ou treino com o boneco atacando)
+  UI.combat = fighting || Bind.active || (Standoff.active && Standoff.phase === 'strike') || (dummy.mode !== 'off' && dd < 7);
   Sound.music(realDt, Standoff.active && Standoff.phase !== 'strike' ? 'standoff' : fighting ? 'combat' : 'explore', Math.max(0, TOD.k));
   grainEl.style.transform = `translate(${(Math.random() * 160) | 0}px, ${(Math.random() * 160) | 0}px)`;
   UI.update(realDt, player, t);
@@ -188,7 +227,8 @@ function update(realDt) {
 
 Quality.apply(URLP.has('q') ? +URLP.get('q') : (IS_TOUCH ? 1 : 3));
 if (!URLP.has('test')) Panel.init();
+if (!TEST) Title.begin(); else Title.active = false;
 if (!TEST) requestAnimationFrame((n) => { clock.last = n; frame(n); });
 document.getElementById('loading').classList.add('gone');
-window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Combat, Bind, Mastery, Rules, get simT() { return simT; },
+window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Title, Pause, Combat, Bind, Mastery, Rules, get simT() { return simT; },
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) update(dt); render(); } };

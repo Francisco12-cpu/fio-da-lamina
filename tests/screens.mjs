@@ -8,6 +8,7 @@ const legacy = process.argv.includes('--legacy');
 const dir = path.resolve(ROOT, arg('--dir', 'tests/screens/atual'));
 const q = arg('--q', '2');
 const only = arg('--only', '');
+const touch = process.argv.includes('--touch');
 fs.mkdirSync(dir, { recursive: true });
 
 // cada cena: função executada na página (depois de __game.start()); deve deixar a cena pronta
@@ -31,6 +32,9 @@ export const SCENES = {
     g.player.respawn({ x: E.center.x, z: E.center.z + 8 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(120);
     g.Lock.toggle(g.player, g.Encounters.enemies, g.rig.yaw); g.step(80);
   },
+  titulo: () => { const g = __game; g.step(240); },
+  treino: () => { const g = __game, P = g.player; P.respawn({ x: 1.5, z: 156 }, 0); g.rig.snap(P.pos); g.rig.yaw = 0; g.Training.step = 3; g.Training.show(); P.draw(); P.focus = 1; g.step(90); },
+  pausa: () => { const g = __game; g.step(60); g.Pause.open(); g.Pause.section('controls'); },
   novos: () => {
     const g = __game, E = g.Encounters.list[4];
     g.player.respawn({ x: E.center.x, z: E.center.z + 7 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(150);
@@ -56,9 +60,10 @@ const base = legacy ? 'http://localhost:5175/legacy/index.html' : 'http://localh
 const b = await launch();
 for (const [name, fn] of Object.entries(SCENES)) {
   if (only && !only.split(',').includes(name)) continue;
-  const { pg, logs } = await openGame(b, `${base}?test&noaudio&q=${q}`);
+  const { pg, logs } = await openGame(b, `${base}?test&noaudio&q=${q}`, touch ? { w: 800, h: 370, touch: true } : {});
   await pg.addStyleTag({ content: '#grain{display:none!important} #stats{visibility:hidden} *{transition:none!important}' });
-  await pg.evaluate(() => { __game.start(); __game.rig.intro = 0; });
+  if (name === 'titulo') await pg.evaluate(() => { __game.Title.begin(); });
+  else await pg.evaluate(() => { __game.start(); __game.rig.intro = 0; });
   await pg.evaluate(`(${fn.toString()})()`);
   await pg.evaluate(() => __game.render());
   await pg.waitForTimeout(1200);

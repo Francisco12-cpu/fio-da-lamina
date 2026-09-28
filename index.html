@@ -32,14 +32,33 @@
   <button class="tb" id="bBlock" type="button" aria-label="Defender e aparar"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/></svg><span class="lbl">defesa</span></button>
   <button class="tb" id="bAtk" type="button" aria-label="Golpear"><svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/></svg><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L20 4"/><path d="M4.5 13.5l6 6"/><path d="M3 21l3.5-3.5"/></svg><span class="lbl">golpe · segure: forte</span></button>
 </div>
-<button id="menuBtn" type="button" aria-label="Ajustes"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+<button id="menuBtn" type="button" aria-label="Pausa"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
 <div id="rotate">Deite o celular para jogar</div>
-<div id="start" role="button" tabindex="0" aria-label="Começar">
-  <h1>Fio da<br>Lâmina</h1>
-  <p class="sub">Protótipo de combate com espada. Treine com o boneco na clareira e siga a trilha: quatro encontros e um duelo esperam no caminho.</p>
-  <p class="ctl" id="ctlText"></p>
-  <span class="go" id="goText">Clique para começar</span>
+<div id="start" role="dialog" aria-label="Fio da Lâmina">
+  <div class="tl">
+    <h1>Fio da<br>Lâmina</h1>
+    <p class="sub">Treine na clareira e siga a trilha até o pôr do sol: seis encontros e um duelo esperam no caminho.</p>
+    <div class="diff" role="radiogroup" aria-label="Dificuldade">
+      <button type="button" role="radio" data-d="facil"><b>Fácil</b><span>Janela de aparar mais larga, inimigos mais pacientes.</span></button>
+      <button type="button" role="radio" data-d="normal"><b>Normal</b><span>Como o duelo foi pensado.</span></button>
+      <button type="button" role="radio" data-d="dificil"><b>Difícil</b><span>Janela curta, ataques em sequência.</span></button>
+    </div>
+    <div class="acts"><button type="button" class="go" id="goBtn">Começar</button><button type="button" class="link" id="ctlBtn">Controles</button><button type="button" class="link" id="creditsBtn">Créditos</button></div>
+  </div>
 </div>
+<div id="pause" hidden role="dialog" aria-label="Pausa"><div class="box">
+  <h2>Pausa</h2>
+  <nav class="menu">
+    <button type="button" data-a="resume">Continuar</button>
+    <button type="button" data-a="controls">Controles</button>
+    <button type="button" data-a="settings">Ajustes</button>
+    <button type="button" data-a="restart">Reiniciar encontro</button>
+    <button type="button" data-a="credits">Créditos</button>
+  </nav>
+  <section class="sec controls" hidden><h3>Controles</h3><div class="list"></div><button type="button" data-a="back">Voltar</button></section>
+  <section class="sec credits" hidden><h3>Créditos</h3><div class="list"></div><button type="button" data-a="back">Voltar</button></section>
+</div></div>
+<div id="creditsBox" hidden role="dialog" aria-label="Créditos"><div class="box"><h3>Créditos</h3><div class="list"></div><button type="button" id="creditsClose">Voltar</button></div></div>
 <div id="fade"><span id="fadeText"></span></div>
 <div id="end" role="dialog" aria-label="Fim da demonstração">
   <h2>Fim da<br>demonstração</h2>

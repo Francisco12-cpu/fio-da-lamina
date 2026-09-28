@@ -90,6 +90,18 @@ const TESTS = {
     out.push(['renascer devolve espada e chapéu', e.sword.parent === e.root && e.hat.parent === e.head]);
     return out;
   },
+  // pausa congela a simulação; reiniciar encontro recoloca todos
+  pausa: () => {
+    const g = __game, E = g.Encounters.list[0], P = g.player, out = [];
+    P.respawn({ x: E.center.x, z: E.center.z + 8 }, 0); g.step(120);
+    const e = E.enemies[0], p0 = e.pos.clone();
+    g.Pause.open(); g.step(60);
+    out.push(['pausado não anda', e.pos.distanceTo(p0) < 1e-6 && g.Pause.isOpen]);
+    g.Pause.close(false); e.health = 1; e.pos.x += 3;
+    g.Pause.actions.restart(); g.step(1);
+    out.push(['reiniciar recoloca e cura', e.health === 2 && Math.hypot(e.pos.x - e.spawn.x, e.pos.z - e.spawn.z) < 0.2 && P.alive]);
+    return out;
+  },
 };
 
 const v = await viteServer(5174);

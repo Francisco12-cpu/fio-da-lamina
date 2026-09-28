@@ -38,7 +38,7 @@ export const Standoff = {
     switch (this.phase) {
       case 'approach':
         it.wx = dx / d; it.wz = dz / d; it.mag = 1; it.analog = 0.9;
-        if (d <= 6.3) { this.phase = 'hold'; UI.stick(T_('Segure o botão esquerdo. Solte no instante em que ele avançar.', 'Segure o botão da espada. Solte no instante em que ele avançar.')); }
+        if (d <= 6.3) { this.phase = 'hold'; UI.stick('Segure {atk}. Solte no instante em que ele avançar.'); }
         break;
       case 'hold':
         p.yaw = damp(p.yaw, yawTo(p.pos, e.pos), 8, dt);
