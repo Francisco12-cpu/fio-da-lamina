@@ -156,6 +156,25 @@ export const Sound = {
     if (!this.ctx) return; const t = this.now(), out = this.bus(0.7);
     [98, 147, 233, 311, 467].forEach((f, i) => { const o = this.osc('sine', f, t, 5); this.env(o, t, 0.01, 0.2 / (i + 1), 4.5 - i * 0.6).connect(out); });
   },
+  // espadas travadas: rangido de metal contínuo
+  grind(dur) {
+    if (!this.ctx) return; this.grindStop();
+    const t = this.now(), n = this.ctx.createBufferSource(); n.buffer = this.noise; n.loop = true;
+    const bp = this.filt('bandpass', 2300, 9), g = this.ctx.createGain(); g.gain.value = 0.0001;
+    const lfo = this.osc('sine', 13, t, dur + 0.5), lg = this.ctx.createGain(); lg.gain.value = 500; lfo.connect(lg); lg.connect(bp.frequency);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
+    n.connect(bp); bp.connect(g); g.connect(this.bus(0.3)); n.start(t); n.stop(t + dur + 0.5);
+    this.grindG = g;
+  },
+  grindStop() { if (!this.ctx || !this.grindG) return; const t = this.now(); this.grindG.gain.cancelScheduledValues(t); this.grindG.gain.setTargetAtTime(0.0001, t, 0.05); this.grindG = null; },
+  // respiração: funda (foco) ou curta e pesada (ferido)
+  breath(deep = true) {
+    if (!this.ctx) return; const t = this.now(), out = this.bus(0.05);
+    const dur = deep ? 0.9 : 0.45;
+    const n = this.src(t, dur), lp = this.filt('bandpass', deep ? 700 : 950, 0.8); n.connect(lp);
+    const g = this.ctx.createGain(); lp.connect(g); g.connect(out);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(deep ? 0.11 : 0.06, t + dur * 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  },
   // ---------- música e ambiente ----------
   // corda dedilhada (Karplus-Strong): parecida com koto/shamisen, gerada uma vez por nota
   plucks: {},

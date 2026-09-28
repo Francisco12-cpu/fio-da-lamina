@@ -33,18 +33,18 @@ bloquear o resto.
 - [x] `AnimationController` por lutador: camadas corpo inteiro / parte de cima, crossfade curto, velocidade ajustada ao tempo do golpe.
 - [x] O boneco procedural vira `ProceduralController` (uma implementação da interface). Pronto: screenshots e bots iguais aos da Fase 2.
 
-### Fase 4 — combate mais realista
-- [ ] 4.1 Sem estabilidade, golpe de espada/lança mata (jogador e inimigos).
-- [ ] 4.2 Janela de aparar por tipo e por golpe (`parryWin`).
-- [ ] 4.3 Maestria: ao vencer um encontro, escolher 1 de 2 melhorias.
-- [ ] 4.4 Foco: esquiva perfeita dá 1 ponto (máx. 3); gastar recupera estabilidade com respiração exposta.
-- [ ] 4.5 Ataques simultâneos: vence quem acerta primeiro; lâminas cruzadas travam (apertar ataque repetidamente).
-- [ ] 4.6 Estocadas: indefensáveis; "aparo absoluto" de ~50 ms quebra a estabilidade.
-- [ ] 4.7 Inimigos novos: lanceiro, escudeiro, esquivo.
-- [ ] 4.8 Trilha com 5 encontros + duelo, grupos até 3, um tipo novo por vez.
-- [ ] 4.9 Impacto empurra na direção do golpe. 4.10 Ferido respira pesado e recupera mais devagar.
-- [ ] 4.11 Morte: joelhos, queda, espada cai, chapéu rola; morte do jogador em câmera lenta e dessaturada.
-- [ ] 4.12 Bots novos (esquiva perfeita + foco, travar espadas) e rebalanceamento. Metas: só ataca e só defende perdem; humano ±120 ms vence os primeiros quase sempre e o duelo ~50%; nenhuma vitória sem aparo.
+### Fase 4 — combate mais realista ✅
+- [x] 4.1 Sem estabilidade, golpe de espada/lança mata (jogador e inimigos).
+- [x] 4.2 Janela de aparar por tipo e por golpe (`parryWin`).
+- [x] 4.3 Maestria: ao vencer um encontro, escolher 1 de 2 melhorias.
+- [x] 4.4 Foco: esquiva perfeita dá 1 ponto (máx. 3); gastar recupera estabilidade com respiração exposta.
+- [x] 4.5 Ataques simultâneos: vence quem acerta primeiro; lâminas cruzadas travam (apertar ataque repetidamente).
+- [x] 4.6 Estocadas: indefensáveis; "aparo absoluto" de ~50 ms quebra a estabilidade.
+- [x] 4.7 Inimigos novos: lanceiro, escudeiro, esquivo.
+- [x] 4.8 Trilha com 5 encontros + duelo, grupos até 3, um tipo novo por vez.
+- [x] 4.9 Impacto empurra na direção do golpe. 4.10 Ferido respira pesado e recupera mais devagar.
+- [x] 4.11 Morte: joelhos, queda, espada cai, chapéu rola; morte do jogador em câmera lenta e dessaturada.
+- [x] 4.12 Bots novos (esquiva perfeita + foco, travar espadas) e rebalanceamento. Metas: só ataca e só defende perdem; humano ±120 ms vence os primeiros quase sempre e o duelo ~50%; nenhuma vitória sem aparo.
 
 ### Fase 5 — interface
 - [ ] Menu de pausa (continuar, controles, ajustes, reiniciar encontro).

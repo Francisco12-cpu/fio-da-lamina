@@ -31,6 +31,24 @@ export const SCENES = {
     g.player.respawn({ x: E.center.x, z: E.center.z + 8 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(120);
     g.Lock.toggle(g.player, g.Encounters.enemies, g.rig.yaw); g.step(80);
   },
+  novos: () => {
+    const g = __game, E = g.Encounters.list[4];
+    g.player.respawn({ x: E.center.x, z: E.center.z + 7 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(150);
+  },
+  esquivo: () => {
+    const g = __game, E = g.Encounters.list[5];
+    g.player.respawn({ x: E.center.x, z: E.center.z + 7 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(150);
+  },
+  trava: () => {
+    const g = __game, E = g.Encounters.list[0], e = E.enemies[0], P = g.player;
+    P.respawn({ x: E.center.x, z: E.center.z + 1.6 }, 0); g.rig.snap(P.pos); g.rig.yaw = 0.5; e.aware = true; e.draw(); P.draw(); P.focus = 2; g.step(40);
+    g.Bind.start(P, e, e.pos.clone().setY(e.pos.y + 1.3), g.simT); for (let i = 0; i < 20; i++) { if (i % 4 === 0) g.Input.press('attack'); g.step(1); }
+  },
+  morte: () => {
+    const g = __game, E = g.Encounters.list[0], e = E.enemies[0], P = g.player;
+    P.respawn({ x: E.center.x + 1.5, z: E.center.z + 4 }, 0); g.rig.snap(P.pos); g.rig.yaw = 0.2; e.aware = true; e.draw(); g.step(30);
+    e.die(g.simT); g.step(100);
+  },
 };
 
 const srv = legacy ? await staticServer(5175) : await viteServer(5174);
@@ -44,7 +62,7 @@ for (const [name, fn] of Object.entries(SCENES)) {
   await pg.evaluate(`(${fn.toString()})()`);
   await pg.evaluate(() => __game.render());
   await pg.waitForTimeout(1200);
-  await pg.screenshot({ path: path.join(dir, name + '.png') });
+  await pg.screenshot({ path: path.join(dir, name + '.png'), timeout: 180000 });
   const errs = logs.filter((l) => !l.includes('ERR_FAILED'));
   console.log(name, errs.length ? errs.join(' | ') : 'ok');
   await pg.close();

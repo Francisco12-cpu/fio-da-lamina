@@ -47,6 +47,9 @@ import { Game } from './game/game.js';
 import { Standoff } from './game/standoff.js';
 import { Training } from './game/training.js';
 import { Lock } from './game/lockon.js';
+import { Bind } from './combat/bind.js';
+import { Combat } from './combat/combat.js';
+import { Mastery, Rules } from './combat/rules.js';
 import { camera, canvas, composer, renderer, scene } from './render/renderer.js';
 import { Panel } from './ui/panel.js';
 import { UI } from './ui/ui.js';
@@ -96,6 +99,7 @@ startEl.addEventListener('click', start);
 startEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } });
 
 const tmpV = new THREE.Vector3();
+let breathT = 0;
 const TEST = URLP.has('test');
 function render() { if (Quality.post) composer.render(); else renderer.render(scene, camera); }
 function frame(now) {
@@ -111,7 +115,7 @@ function frame(now) {
 function update(realDt) {
   clock.elapsed += realDt;
   const t = clock.elapsed;
-  const dt = Panel.open ? 0 : Time.step(realDt);
+  const dt = Panel.open || Game.paused ? 0 : Time.step(realDt);
   advanceSim(dt);
   Later.run();
   SH.uTime.value = simT;
@@ -121,7 +125,10 @@ function update(realDt) {
   for (const e of Encounters.enemies) if (e.alive) targets.push(e);
   const speed = Standoff.active ? Standoff.update(dt, simT) : player.tick(dt, simT, rig.yaw, targets);
   for (const e of Encounters.enemies) if (!(Standoff.active && e === Standoff.e)) e.tick(dt, simT, player);
+  Bind.update(dt, simT);
   dummy.update(dt, simT, player);
+  // ferido: respiração pesada
+  if (player.wounded && dt > 0) { breathT -= dt; if (breathT <= 0) { breathT = 1.25; Sound.breath(false); } }
   Training.update(realDt, player, dummy);
   Encounters.update(realDt, simT);
   Game.update(realDt);
@@ -183,5 +190,5 @@ Quality.apply(URLP.has('q') ? +URLP.get('q') : (IS_TOUCH ? 1 : 3));
 if (!URLP.has('test')) Panel.init();
 if (!TEST) requestAnimationFrame((n) => { clock.last = n; frame(n); });
 document.getElementById('loading').classList.add('gone');
-window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI,
+window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Combat, Bind, Mastery, Rules, get simT() { return simT; },
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) update(dt); render(); } };

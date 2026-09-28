@@ -125,6 +125,7 @@ export class Dummy {
       Training.add('block');
     } else if (res === 'dodge' || res === 'pdodge') {
       Time.slow(0.4, 0.3); UI.flash(res === 'pdodge' ? 'Esquiva perfeita' : 'Esquivou');
+      if (res === 'pdodge' && player.gainFocus) { player.gainFocus(); Training.add('pfocus'); }
       if (this.sig) Training.add('dodge');
     } else if (res === 'hit') {
       Time.freeze(0.07); Fx.shake(0.6);

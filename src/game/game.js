@@ -3,6 +3,7 @@ import { _up, _v } from '../combat/moves.js';
 import { Stats } from '../combat/state.js';
 import { Input } from '../core/input.js';
 import { G, Later, clock } from '../core/time.js';
+import { Mastery } from '../combat/rules.js';
 import { rand } from '../core/util.js';
 import { leafFx } from '../fx/fx.js';
 import { Encounters } from './encounters.js';
@@ -25,6 +26,17 @@ export const Game = {
         leafFx.emit(_v, _up, 1, 0.3, 1, 7);
       }
     }
+  },
+  paused: false, autoMastery: false,
+  // ao vencer um encontro: escolher 1 de 2 melhorias (o jogo espera)
+  offerMastery(i) {
+    if (!G.player.alive) return;
+    const opts = Mastery.offer(977 * (i + 1) + Mastery.history.length);
+    if (!opts.length) { UI.hint('Siga a trilha', 4); return; }
+    if (this.autoMastery) { Mastery.take(opts[0].id); UI.hint('Siga a trilha', 4); return; }
+    this.paused = true;
+    if (document.pointerLockElement) document.exitPointerLock();
+    UI.mastery(opts, (u) => { Mastery.take(u.id); this.paused = false; UI.flash(u.name); Later.after(1.0, () => UI.hint('Siga a trilha', 4)); });
   },
   onPlayerDeath() { this.respawnT = 3.0; Later.after(1.1, () => UI.fade(true, 'Você caiu')); },
   update(dt) {

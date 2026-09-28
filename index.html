@@ -19,12 +19,15 @@
 <div id="lockMark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3 A17 17 0 0 1 37 20"/><path d="M20 37 A17 17 0 0 1 3 20"/><circle cx="20" cy="20" r="2.6"/></svg></div>
 <div id="hint" role="status" aria-live="polite"></div>
 <div id="flash" aria-hidden="true"></div>
-<div id="vit" aria-label="Vitalidade"><i></i><i></i></div>
+<div id="vit"><div class="hp" aria-label="Vitalidade"></div><div class="focus" aria-label="Foco"></div></div>
+<div id="bind" aria-hidden="true"><div class="rope"><i class="knot"></i></div><span class="lbl">Aperte o golpe repetidamente</span></div>
+<div id="mastery" hidden role="dialog" aria-label="Maestria"><div class="box"><h2>Maestria</h2><p class="sub">O caminho ensina. Escolha uma melhoria.</p><div class="cards"></div></div></div>
 <div id="pstab" aria-label="Estabilidade"><i></i><b></b></div>
 <button id="stats" type="button" title="Toque para abrir os ajustes"></button>
 <div id="joy"><div id="joyKnob"></div></div>
 <div id="touchUI" hidden>
   <button class="tb" id="bDodge" type="button" aria-label="Esquivar"><svg class="ic" viewBox="0 0 24 24"><path d="M4 17c3-7 8-10 15-9"/><path d="M15 4l4 4-4 4"/></svg><span class="lbl">esquiva</span></button>
+  <button class="tb" id="bFocus" type="button" aria-label="Usar foco"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3c0 0-6.5 8-6.5 12a6.5 6.5 0 0 0 13 0C18.5 11 12 3 12 3z"/></svg><span class="lbl">foco</span></button>
   <button class="tb" id="bLock" type="button" aria-label="Travar a mira"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span class="lbl">mira</span></button>
   <button class="tb" id="bBlock" type="button" aria-label="Defender e aparar"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/></svg><span class="lbl">defesa</span></button>
   <button class="tb" id="bAtk" type="button" aria-label="Golpear"><svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46"/></svg><svg class="ic" viewBox="0 0 24 24"><path d="M7 17L20 4"/><path d="M4.5 13.5l6 6"/><path d="M3 21l3.5-3.5"/></svg><span class="lbl">golpe · segure: forte</span></button>

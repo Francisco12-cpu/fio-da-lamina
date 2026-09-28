@@ -14,6 +14,8 @@ export const POSE = {
   hurt:  P(0.2, 1.0, -0.2, -0.5, -0.2, 0),
   stun:  P(0.35, 1.5, 0.05, -1.2, 1.3, 0.4),
   broken: P(0.3, 0.8, -0.1, -0.9, -0.9, 0.3),
+  bind: P(0.1, 1.32, -0.5, 0.45, 1.0, 0.9),
+  breathe: P(0.22, 0.92, -0.28, -0.35, 0.05, 0),
 };
 export const K_H = [P(0.42, 1.28, -0.02, -2.1, 0.25, -1.3), P(0.04, 1.2, -0.6, 0.0, 0.06, -1.3), P(-0.4, 1.14, -0.2, 2.0, -0.05, -1.3)];
 export const K_D = [P(-0.3, 1.56, -0.04, 1.6, 0.9, 0.9), P(0.0, 1.25, -0.58, 0.1, 0.0, 0.9), P(0.36, 0.92, -0.3, -1.7, -0.7, 0.9)];
@@ -33,16 +35,41 @@ export const PLAYER_MOVES = [
 ];
 export const STRONG = 3, RUSH = 4, COUNTER = 5;
 
+// lança: a mão segura o meio da haste; a "lâmina" (trecho que acerta) fica bem à frente
+export const K_SPEAR = [P(0.2, 1.1, 0.3, -0.05, 0.0, 1.57), P(0.12, 1.12, -0.35, -0.02, 0.0, 1.57), P(0.1, 1.12, -0.62, 0.0, 0.0, 1.57)];
+export const K_JAB = [P(0.2, 1.2, 0.1, -0.1, 0.05, 1.57), P(0.12, 1.2, -0.4, -0.03, 0.02, 1.57), P(0.12, 1.2, -0.45, 0.0, 0.02, 1.57)];
+export const K_SWEEP = [P(0.45, 0.95, 0.05, -1.9, -0.28, -1.4), P(0.05, 0.7, -0.45, 0.0, -0.3, -1.4), P(-0.4, 0.7, -0.2, 1.8, -0.3, -1.4)];
+// escudo: o empurrão é do corpo; a espada fica recolhida ao lado
+export const K_BASH = [P(0.3, 1.0, 0.15, -0.6, 0.2, 0), P(0.3, 1.0, 0.0, -0.6, 0.2, 0), P(0.3, 1.0, 0.0, -0.6, 0.2, 0)];
+
+// armas: trecho da arma (distância da mão, ao longo de -Z) que conta como lâmina no acerto
+export const WEAPONS = {
+  katana: { base: 0.16, tip: 0.98 },
+  spear: { base: 1.25, tip: 2.02 },
+  short: { base: 0.14, tip: 0.8 },
+};
+
 // biblioteca de golpes dos inimigos (cada tipo usa um subconjunto)
 //   sem sinal: pode defender ou aparar | azul: só aparar ou esquivar | vermelho: só esquivar
+//   thrust: estocada (vermelha) — só esquiva, ou o "aparo absoluto" no último instante
+//   sweep: varredura baixa (vermelha) — só esquiva, nada de aparo
+//   pw: janela de aparar deste golpe (senão vale a do tipo de inimigo)
 export const ENEMY_LIB = {
   A: { w: 0.42, a: 0.1,  r: 0.55, lunge: 1.1, guard: 18, keys: K_H },
-  B: { w: 0.9,  a: 0.12, r: 0.6,  lunge: 1.2, guard: 24, hold: 0.5, keys: K_V },
-  Q: { w: 0.5,  a: 0.1,  r: 0.5,  lunge: 1.2, guard: 20, sig: 'blue', keys: K_D },
+  B: { w: 0.9,  a: 0.12, r: 0.6,  lunge: 1.2, guard: 24, hold: 0.5, keys: K_V, pwK: 1.1 },
+  Q: { w: 0.5,  a: 0.1,  r: 0.5,  lunge: 1.2, guard: 20, sig: 'blue', keys: K_D, pwK: 0.85 },
   O: { w: 0.78, a: 0.12, r: 0.65, lunge: 1.3, guard: 30, sig: 'blue', keys: K_BIG },
-  T: { w: 0.92, a: 0.13, r: 0.75, lunge: 2.3, sig: 'red', keys: K_THRUST },
+  T: { w: 0.92, a: 0.13, r: 0.75, lunge: 2.3, sig: 'red', thrust: true, keys: K_THRUST },
   G: { w: 0.62, a: 0.14, r: 0.7,  lunge: 1.8, sig: 'red', grab: true, keys: K_GRAB },
-  F: { w: 0.9,  a: 0.12, r: 0.6,  lunge: 1.2, guard: 24, hold: 0.5, feint: { at: 0.64, into: 'A' }, keys: K_V },
+  F: { w: 0.9,  a: 0.12, r: 0.6,  lunge: 1.2, guard: 24, hold: 0.5, feint: { at: 0.64, into: 'A' }, keys: K_V, pwK: 1.1 },
+  // lanceiro
+  S: { w: 0.82, a: 0.13, r: 0.75, lunge: 1.5, sig: 'red', thrust: true, keys: K_SPEAR, reach: 3.3 },
+  W: { w: 0.78, a: 0.16, r: 0.7,  lunge: 0.5, sig: 'red', sweep: true, keys: K_SWEEP, reach: 2.9 },
+  J: { w: 0.46, a: 0.1,  r: 0.5,  lunge: 0.6, guard: 16, keys: K_JAB, reach: 2.9, pwK: 0.9 },
+  // escudeiro: empurrão de escudo (azul: defender não segura; aparar ou esquivar)
+  H: { w: 0.55, a: 0.12, r: 0.6,  lunge: 1.7, sig: 'blue', bash: true, keys: K_BASH, reach: 1.9 },
+  // esquivo: contra-ataque rápido logo depois de esquivar
+  E: { w: 0.3,  a: 0.09, r: 0.45, lunge: 1.4, guard: 18, keys: K_D, pwK: 0.85 },
 };
 export const lerpPose = (a, b, t, o = {}) => {
   o.hx = lerp(a.hx, b.hx, t); o.hy = lerp(a.hy, b.hy, t); o.hz = lerp(a.hz, b.hz, t);

@@ -8,6 +8,7 @@ const legacy = process.argv.includes('--legacy');
 const runs = +arg('--runs', 4);
 const botNames = arg('--bots', 'spammer,turtle,skilled,human').split(',');
 const secs = +arg('--secs', 60);
+const noUps = process.argv.includes('--noups');
 const out = arg('--out', path.join(ROOT, 'tests/out', legacy ? 'bots-legacy.json' : 'bots.json'));
 
 const srv = legacy ? await staticServer(5175) : await viteServer(5174);
@@ -21,7 +22,7 @@ const results = {};
 for (const enc of encs) {
   for (const bot of botNames) {
     const rs = [];
-    for (let r = 0; r < runs; r++) rs.push(await pg.evaluate(([e, bn, s, r]) => { botSeed(1000 + r * 7919); return fight(e, bots[bn], s); }, [enc, bot, secs, r]));
+    for (let r = 0; r < runs; r++) rs.push(await pg.evaluate(([e, bn, s, r, nu]) => { botSeed(1000 + r * 7919); return fight(e, bots[bn], s, nu ? { upgrades: [] } : {}); }, [enc, bot, secs, r, noUps]));
     const won = rs.filter((x) => x.result === 'won');
     const noParryWins = won.filter((x) => x.parries === 0).length;
     results[`${names[enc]}|${bot}`] = rs;

@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { Sound } from '../audio/sound.js';
 import { Combat } from '../combat/combat.js';
-import { COUNTER, GLINT, P, POSE, RUSH, STRONG, _b, _c, _down, _e, _m4, _one, _q, _t, _up, _v, _v2, lerpPose, movePose } from '../combat/moves.js';
+import { COUNTER, GLINT, P, POSE, RUSH, STRONG, WEAPONS, _b, _c, _down, _e, _m4, _one, _q, _t, _up, _v, _v2, lerpPose, movePose } from '../combat/moves.js';
+import { Bind } from '../combat/bind.js';
+import { Mastery, Rules } from '../combat/rules.js';
 import { FIGHTERS, Habits, Report, Stats } from '../combat/state.js';
 import { CFG } from '../core/config.js';
 import { angDiff, clamp, damp, easeInOut, easeOut, lerp, segSeg, smooth, yawTo } from '../core/util.js';
@@ -17,6 +19,7 @@ import { terrain, withBacklight, withRim } from '../world/world.js';
    LUTADOR — corpo, estabilidade e máquina de estados, comum a todos.
    Quem controla (teclado/toque ou IA) só entrega um "intent" por quadro.
    ================================================================ */
+const _cb1 = new THREE.Vector3(), _ct1 = new THREE.Vector3(), _cp1 = new THREE.Vector3(), _pose1 = {};
 export class Fighter {
   constructor(o) {
     this.isPlayer = !!o.isPlayer; this.moveset = o.moveset; this.speeds = o.speeds;
@@ -35,6 +38,8 @@ export class Fighter {
     this.lastHitT = -99; this.pushDir = new THREE.Vector2();
     this.target = null; this.targetDist = 99; this.glintT = -1; this.ritualT = -1;
     this.swordPose = { ...POSE.draw };
+    this.weapon = WEAPONS[o.weapon || 'katana']; this.weaponKind = o.weapon || 'katana'; this.shield = !!o.shield;
+    this.bindWith = null; this.hitDir = new THREE.Vector2(); this.prevTip = new THREE.Vector3(); this.hasPrevTip = false;
     this.trail = new Trail();
     // o corpo e a animação ficam no controlador (procedural hoje; modelo 3D quando houver)
     this.anim = createAnimController(this, o.look || {});
@@ -42,6 +47,7 @@ export class Fighter {
   }
   get alive() { return this.state !== 'dead'; }
   syncRoot() {
+    if (this.anim && this.anim.reset) this.anim.reset();
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.body.rotation.x = 0;
     this.root.updateMatrixWorld(true); this.cloth.reset();
   }
@@ -66,20 +72,22 @@ export class Fighter {
   }
   onBroken() {}
   regenStab(dt, t) {
-    if (!this.alive || ['broken', 'attack', 'hurt', 'stagger', 'recoil', 'down'].includes(this.state)) return;
+    if (!this.alive || ['broken', 'attack', 'hurt', 'stagger', 'recoil', 'down', 'bind', 'breathe'].includes(this.state)) return;
     if (t - this.lastStabLoss < (this.isPlayer ? 0.9 : 1.4)) return;
     let r;
     if (this.isPlayer) {
       const sp = Math.hypot(this.vel.x, this.vel.z);
       r = sp > this.speeds.walk + 0.5 ? 0 : (this.state === 'block' || sp < 0.4) ? 32 : this.drawn && this.target ? 24 : 14;
+      r *= 1 + 0.3 * Mastery.lv('regen');
     } else r = this.type.regen;
+    if (this.wounded) r *= 0.6; // ferido: respira pesado e se recompõe mais devagar
     this.stab = Math.min(this.maxStab, this.stab + r * dt);
   }
 
   startAttack(i, t) {
     this.draw();
     this.combo = i; this.move = this.moveset[i]; this.fromPose = { ...this.swordPose };
-    this.hitSet.clear(); this.queued = false; this.swooshed = false; this.glinted = false; this.feinted = false; this.charged = false;
+    this.fromFeint = false; this.hitSet.clear(); this.queued = false; this.swooshed = false; this.glinted = false; this.feinted = false; this.charged = false;
     this.lastCombatT = t; this.attackId++;
     if (this.move.sig) this.glint.material.color.copy(GLINT[this.move.sig]);
     if (!this.isPlayer) Sound.cloth();
@@ -99,9 +107,17 @@ export class Fighter {
   }
   stagger(dur, from) { if (!this.alive || this.state === 'broken') return; this.staggerDur = dur; if (from) this.push(from, 1.5); this.setState('stagger'); }
   recoil(from) { if (!this.alive || this.state === 'broken') return; this.push(from, 1.8); this.setState('recoil'); }
-  takeHit(from, lethal, t, knock) {
+  get wounded() { return this.alive && this.health < this.maxHealth; }
+  // empurrão na direção do golpe: mistura "para longe do atacante" com o movimento da lâmina
+  pushBlow(from, dir, k) {
+    const bx = this.pos.x - from.x, bz = this.pos.z - from.z, bl = Math.hypot(bx, bz) || 1;
+    let px = bx / bl, pz = bz / bl;
+    if (dir && (dir.x || dir.y)) { px = px * 0.45 + dir.x * 0.55; pz = pz * 0.45 + dir.y * 0.55; const l = Math.hypot(px, pz) || 1; px /= l; pz /= l; }
+    this.pushDir.set(px, pz); this.vel.x += px * k; this.vel.z += pz * k;
+  }
+  takeHit(from, lethal, t, knock, dir) {
     this.health = Math.max(0, this.health - 1); this.lastHitT = t; this.lastCombatT = t;
-    this.push(from, 0);
+    this.pushBlow(from, dir, 1.4);
     if (this.health <= 0) {
       if (lethal) { this.die(t); return; }
       this.downDur = 2; this.downRestore = true; this.setState('down');
@@ -120,8 +136,8 @@ export class Fighter {
     const out = new THREE.Vector3();
     return segSeg(b, tip, _v, _v2, out) < 0.3 ? out : null;
   }
-  onHit({ point, attacker, move, t }) {
-    const res = this.receiveAttack({ sig: move.sig, grab: move.grab, from: attacker.pos, attacker, src: attacker.type ? attacker.type.label : 'jogador', lethal: true, t });
+  onHit({ point, attacker, move, t, dir }) {
+    const res = this.receiveAttack({ sig: move.sig, grab: move.grab, bash: move.bash, thrust: move.thrust, sweep: move.sweep, move, dir, from: attacker.pos, attacker, src: attacker.type ? attacker.type.label : 'jogador', lethal: true, t });
     Combat.resolve(attacker, this, res, point, t, move);
   }
 
@@ -177,7 +193,7 @@ export class Fighter {
         // segurar o botão durante um golpe leve vira golpe forte
         if (this.isPlayer && m.light && !this.charged && tt >= 0.09 && tt < m.w && it.atkHeld) { this.charged = true; this.startAttack(STRONG, t); break; }
         // finta: sai de um golpe e entra em outro, com tremor como aviso
-        if (m.feint && !this.feinted && tt >= m.feint.at) { this.feinted = true; Sound.feint(); this.startAttack(this.moveIndex(m.feint.into), t); break; }
+        if (m.feint && !this.feinted && tt >= m.feint.at) { this.feinted = true; Sound.feint(); this.startAttack(this.moveIndex(m.feint.into), t); this.fromFeint = true; break; }
         if (tt < m.w && this.target) { faceYaw = yawTo(this.pos, this.target.pos); turnK = this.isPlayer ? 3 : (tt < m.w * 0.6 ? 1.3 : 0.25); }
         const ls = m.w * (m.hold ? 0.8 : 0.4), le = m.w + m.a;
         if (tt > ls && tt < le) {
@@ -217,6 +233,20 @@ export class Fighter {
         const k = Math.max(0, 1 - this.st / 0.4);
         tvx = this.pushDir.x * 3 * k; tvz = this.pushDir.y * 3 * k; accelK = 20;
         if (this.st >= this.downDur) { if (this.downRestore) { this.health = this.maxHealth; this.stab = this.maxStab; } this.setState('move'); }
+        break;
+      }
+      case 'bind': {
+        // espadas travadas: parado, encarando, empurrando (quem decide é o Bind)
+        accelK = 20;
+        if (this.bindWith) { faceYaw = yawTo(this.pos, this.bindWith.pos); turnK = 2; }
+        if (this.isPlayer && it.atk) Bind.press(this);
+        break;
+      }
+      case 'breathe': {
+        // foco: uma respiração curta que devolve estabilidade, mas deixa exposto
+        accelK = 16;
+        this.gainStab((this.maxStab * Rules.FOCUS_GAIN * dt) / Rules.BREATHE);
+        if (this.st >= Rules.BREATHE) this.setState(it.blockHeld ? 'block' : 'move');
         break;
       }
       case 'dead': {
@@ -268,18 +298,18 @@ export class Fighter {
   bladeWorld(pose, outB, outT) {
     _e.set(pose.pitch, pose.yaw, pose.roll, 'YXZ'); _q.setFromEuler(_e);
     _m4.compose(_v.set(pose.hx, pose.hy, pose.hz), _q, _one).premultiply(this.root.matrixWorld);
-    outB.set(0, 0, -0.16).applyMatrix4(_m4); outT.set(0, 0, -0.98).applyMatrix4(_m4);
+    outB.set(0, 0, -this.weapon.base).applyMatrix4(_m4); outT.set(0, 0, -this.weapon.tip).applyMatrix4(_m4);
   }
   sampleBlade(t0, t1, targets, now) {
     const m = this.move, a0 = m.w - 0.015, a1 = m.w + m.a + 0.05;
-    if (t1 < a0 || t0 > a1) return;
+    if (t1 < a0 || t0 > a1) { this.hasPrevTip = false; return; }
     this.root.updateMatrixWorld(true);
-    if (m.grab) {
-      // agarrão: alcance do corpo, não da lâmina
+    if (m.grab || m.bash) {
+      // agarrão e empurrão de escudo: alcance do corpo, não da lâmina
       if (t1 >= m.w && t0 <= m.w + m.a) for (const tg of targets) {
         if (this.hitSet.has(tg) || !tg.alive) continue;
         const d = Math.hypot(tg.pos.x - this.pos.x, tg.pos.z - this.pos.z);
-        if (d < 1.45 && Math.abs(angDiff(this.yaw, yawTo(this.pos, tg.pos))) < 0.8) {
+        if (d < (m.bash ? 1.55 : 1.45) && Math.abs(angDiff(this.yaw, yawTo(this.pos, tg.pos))) < 0.8) {
           this.hitSet.add(tg);
           tg.onHit({ point: _v.set(tg.pos.x, tg.pos.y + 1.2, tg.pos.z).clone(), attacker: this, move: m, t: now });
         }
@@ -292,12 +322,38 @@ export class Fighter {
       if (tt < a0 || tt > a1) continue;
       this.anim.bladeAt(m, tt, this.fromPose, _b, _t, pose);
       this.trail.push(_b, _t);
+      // direção do golpe (movimento da ponta), usada para empurrar quem for atingido
+      if (this.hasPrevTip) { const dx = _t.x - this.prevTip.x, dz = _t.z - this.prevTip.z, l = Math.hypot(dx, dz); if (l > 1e-4) this.hitDir.set(dx / l, dz / l); }
+      this.prevTip.copy(_t); this.hasPrevTip = true;
       if (tt < m.w || tt > m.w + m.a || this.state !== 'attack') continue;
       for (const tg of targets) {
         if (this.hitSet.has(tg)) continue;
+        // lâminas que se cruzam no meio de dois golpes travam (antes de chegar ao corpo)
+        if (this.clashTest(tg, now)) { this.hitSet.add(tg); return; }
         const hit = tg.hitTest(_b, _t);
-        if (hit) { this.hitSet.add(tg); tg.onHit({ point: hit, from: this.pos, attacker: this, move: m, strong: !!m.strong, t: now }); }
+        // os dois golpes no mesmo instante, de frente: as lâminas se encontram e travam
+        if (hit && this.simultaneous(tg) && Bind.start(this, tg, hit, now)) { this.hitSet.add(tg); tg.hitSet.add(this); return; }
+        if (hit) { this.hitSet.add(tg); tg.onHit({ point: hit, from: this.pos, attacker: this, move: m, strong: !!m.strong, t: now, dir: this.hitDir }); }
       }
+      if (this.state !== 'attack') return;
     }
   }
+  simultaneous(tg) {
+    const om = tg.move;
+    if (tg.state !== 'attack' || !om || om.grab || om.bash || om.thrust || tg.hitSet.has(this)) return false;
+    if (tg.st < om.w - 0.06 || tg.st > om.w + om.a) return false;
+    return Math.abs(angDiff(tg.yaw, yawTo(tg.pos, this.pos))) < 0.9;
+  }
+  clashTest(tg, now) {
+    const om = tg.move;
+    if (tg.state !== 'attack' || !om || !tg.anim || om.grab || om.bash || tg.hitSet.has(this)) return false;
+    if (tg.st < om.w * 0.8 || tg.st > om.w + om.a) return false;
+    tg.anim.bladeAt(om, tg.st, tg.fromPose, _cb1, _ct1, _pose1);
+    // as lâminas se cruzam de frente (tolerância de 30 cm: as duas estão em movimento)
+    if (Math.abs(angDiff(tg.yaw, yawTo(tg.pos, this.pos))) > 1.0) return false;
+    if (segSeg(_b, _t, _cb1, _ct1, _cp1) > 0.3) return false;
+    tg.hitSet.add(this);
+    return Bind.start(this, tg, _cp1, now);
+  }
+
 }

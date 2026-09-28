@@ -17,7 +17,8 @@ export const Training = {
     { kinds: ['counter'], need: 1, mode: 'normal', text: 'Depois de aparar, o boneco fica aberto por um instante. Apare e golpeie logo em seguida.' },
     { kinds: ['parry', 'dodge'], need: 1, mode: 'blue', text: 'Brilho azul atravessa a defesa: segurar não adianta. Apare no instante certo ou esquive.' },
     { kinds: ['dodge'], need: 1, mode: 'red', text: T_('Brilho vermelho não pode ser defendido nem aparado. Esquive com Espaço na hora certa.', 'Brilho vermelho não pode ser defendido nem aparado. Esquive com o botão da seta na hora certa.') },
-    { mode: 'mix', text: 'Treino completo. Inimigos defendem golpes de frente: quebre a estabilidade deles (barra sobre a cabeça) aparando e pressionando. Sem equilíbrio, caem com um golpe. Não ataque correndo: pare, entre em guarda e se aproxime.' },
+    { kinds: ['pfocus'], need: 1, mode: 'red', text: T_('Esquive no último instante: a esquiva perfeita dá um ponto de foco (os pingos de tinta). Aperte F para respirar e recuperar a estabilidade — mas respirar deixa você exposto.', 'Esquive no último instante: a esquiva perfeita dá um ponto de foco (os pingos de tinta). Toque no botão foco para respirar e recuperar a estabilidade — mas respirar deixa você exposto.') },
+    { mode: 'mix', text: T_('Treino completo. Inimigos defendem golpes de frente: quebre a estabilidade deles (barra sobre a cabeça) aparando e pressionando. Sem equilíbrio, caem com um golpe — e você também. Se os dois golpearem juntos, as espadas podem travar: aperte o golpe sem parar. Q trava a mira.', 'Treino completo. Inimigos defendem golpes de frente: quebre a estabilidade deles (barra sobre a cabeça) aparando e pressionando. Sem equilíbrio, caem com um golpe — e você também. Se os dois golpearem juntos, as espadas podem travar: aperte o golpe sem parar. O botão da mira trava o alvo.') },
   ],
   cur() { return this.steps[Math.min(this.step, this.steps.length - 1)]; },
   add(kind) {

@@ -1,3 +1,4 @@
+import { Rules } from './rules.js';
 import { lerp, rand } from '../core/util.js';
 
 export const Director = {
@@ -6,7 +7,7 @@ export const Director = {
   take(e) { this.attacker = e; },
   release(e, t) {
     if (this.attacker === e) { this.attacker = null; this.lastEnd = t; }
-    e.nextAtkT = t + lerp(e.type.interval[0], e.type.interval[1], rand());
+    e.nextAtkT = t + lerp(e.type.interval[0], e.type.interval[1], rand()) * Rules.D.interval;
   },
   reset() { this.attacker = null; this.lastEnd = -9; },
 };

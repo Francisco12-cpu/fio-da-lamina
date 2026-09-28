@@ -67,3 +67,57 @@ Fase 1, que precisava ser idêntica ao legado.
 - **Agendador `Later` no lugar de `setTimeout`** (ritual da espada, fade da morte, dicas). O
   `setTimeout` dependia do relógio da máquina e deixava os bots não determinísticos entre
   versões do código. Com `Later`, rodado dentro do `update()`, o jogo real se comporta igual.
+
+## 2026-09-28 — Fase 4: combate mais realista
+
+Regras novas (valores em `src/combat/rules.js`, `ENEMY_LIB` e `ETYPES`):
+- **Sem estabilidade = morte**: jogador desequilibrado morre com qualquer golpe de lâmina
+  (agarrão e empurrão de escudo não matam). Inimigos já funcionavam assim (golpe decisivo).
+- **Janela de aparar por tipo** (`pw`): recruta 190 ms, escudeiro 160, agressivo e lanceiro 150,
+  paciente 140, esquivo 120, duelista 90. Por golpe (`pwK`): rápidos ×0,85, atrasados ×1,1.
+  Dificuldade multiplica (fácil ×1,3, difícil ×0,78); o painel de ajustes continua valendo
+  (160 ms = 1×). Dificuldade nunca dá vida extra.
+- **Maestria**: 6 melhorias pequenas, 1 de 2 ao vencer cada encontro (jogo pausa). Sorteio com
+  gerador próprio (não mexe na IA).
+- **Foco**: esquiva perfeita dá 1 ponto (máx. 3, 4 com melhoria). F/R ou botão "foco": respiração
+  de 0,75 s que devolve 55% da estabilidade; nesse tempo não defende nem ataca.
+- **Ataques simultâneos (tempo e geometria decidem, sem sorteio)**: o inimigo ainda está em
+  guarda até 85% da preparação; nos últimos 15% está comprometido — se sua lâmina chegar antes,
+  você acerta primeiro. Se os dois golpes se encontram no mesmo instante (seu corte chega a
+  ±60 ms do contato dele, de frente) ou as lâminas passam a menos de 30 cm, **as espadas
+  travam**: cada toque no golpe empurra 0,12; o inimigo empurra em ondas (0,35 a 0,72/s por
+  tipo). Quem chega ao fim desequilibra o outro; em 3 s sem vencedor, as lâminas se soltam.
+  Descartado: sorteio de quem ganha (pedido explícito do dono: sem sorteio).
+- **Estocadas** (T, S da lança): indefensáveis; "aparo absoluto" se apertar a defesa até 50 ms
+  antes do contato, que quebra a estabilidade do inimigo. Varredura baixa (W): só esquiva.
+- **Inimigos novos**: lanceiro (alcance 2 m de lâmina, recua se você chega perto, não defende a
+  menos de 1,5 m), escudeiro (escudo anula golpes leves de frente sem custo; forte, flanco e
+  aparo abrem; empurrão de escudo azul que derruba 38 de estabilidade sem ferir), esquivo (esquiva
+  65% dos golpes e contra-ataca 0,26 s depois; 50 de estabilidade).
+- **Trilha**: 6 encontros + duelo (z 116, 84, 52, 20, −12, −46, −100), um tipo novo por vez,
+  grupos até 3. Ficou 6 e não 5 para manter o paciente, que já existia, e ainda apresentar um
+  tipo novo de cada vez.
+- **Impacto**: o empurrão mistura "para longe do atacante" (45%) com a direção da ponta da
+  lâmina (55%). **Ferido**: curvado, respiração pesada (som), estabilidade volta a 60%.
+- **Morte**: joelhos cedem (0,42 s), cai de joelhos, tomba para a frente; a espada solta da mão
+  com física simples e deita no chão; o chapéu rola na borda e tomba. Jogador: câmera lenta
+  (0,28× por 1,5 s) e imagem sem cor (filtro CSS: funciona com e sem pós-processamento).
+
+Correções de equilíbrio descobertas pelos bots:
+- O "só ataca" vencia acertando o inimigo no fim da preparação e de novo enquanto ele cambaleava.
+  Agora: (1) inimigo ferido volta à guarda em 0,14 s; (2) o terceiro golpe seguido na guarda é
+  aparado; (3) a IA não começa um golpe lento enquanto você está golpeando; (4) quem apara
+  contra-ataca.
+- Um aparo só decidia o duelo (aparo 45 + contra-golpe 50 + ferimento 30). Contra-golpe caiu para
+  20 (+12 por melhoria) e o duelista tem 125 de estabilidade: precisa de dois bons aparos.
+
+Resultado dos bots (6 lutas por combinação; duelo com 24):
+- Só ataca: perde em todos (1/6 contra lanceiro+agressivo, que é fraco de perto).
+- Só defende: perde ou empata em todos.
+- Humano ±120 ms: 6/6 nos três primeiros, 5–6/6 nos seguintes, duelo ~62% (15/24). Sem
+  melhorias, os números são parecidos: as melhorias são pequenas e o bot lê todos os golpes;
+  para um humano de verdade elas dão margem de erro.
+- "Binder" (provoca a trava e aperta sem parar): vence sem aparar contra os primeiros usando só
+  travas vencidas. Decisão: trava vencida conta como defesa habilidosa (é uma janela de tempo de
+  ±60 ms), então a meta "nenhuma vitória sem aparo" vira "nenhuma vitória sem aparo ou trava".
+- Bot humano também reage com atraso às fintas (antes ele relia o golpe na hora, sem se enganar).

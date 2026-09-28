@@ -12,7 +12,7 @@ export const Input = {
   move: new THREE.Vector2(), run: false,
   lookDX: 0, lookDY: 0, lastLookTime: -99,
   locked: false, noLock: false, enabled: false,
-  buf: { attack: -9, dodge: -9, blockPress: -9, lock: -9 },
+  buf: { attack: -9, dodge: -9, blockPress: -9, lock: -9, focus: -9 },
   tap: null,
   blockKey: false, blockMouse: false, blockTouch: false, atkKey: false, atkMouse: false, atkTouch: false,
   joy: { id: null, ox: 0, oy: 0, x: 0, y: 0 },
@@ -31,6 +31,7 @@ export const Input = {
       if (e.code === 'KeyJ') { this.atkKey = true; this.press('attack'); }
       if (e.code === 'KeyK') { this.blockKey = true; this.press('blockPress'); }
       if (e.code === 'KeyQ' || e.code === 'KeyL') this.press('lock');
+      if (e.code === 'KeyF' || e.code === 'KeyR') this.press('focus');
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup', (e) => { this.keys.delete(e.code); if (e.code === 'KeyK') this.blockKey = false; if (e.code === 'KeyJ') this.atkKey = false; });
@@ -123,6 +124,7 @@ export const Input = {
     btn('bAtk', () => { this.atkTouch = true; this.press('attack'); }, () => { this.atkTouch = false; });
     btn('bDodge', () => this.press('dodge'));
     btn('bLock', () => this.press('lock'));
+    btn('bFocus', () => this.press('focus'));
     btn('bBlock', () => { this.blockTouch = true; this.press('blockPress'); }, () => { this.blockTouch = false; });
   },
   addLook(dx, dy) { this.lookDX += dx; this.lookDY += dy; this.lastLookTime = clock.elapsed; },
