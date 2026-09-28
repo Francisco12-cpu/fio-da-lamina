@@ -34,3 +34,20 @@ animações). Se o dono confirmar a origem e a licença do `Samurai.fbx`, dá pa
 **Balanceamento de partida (legado):** o bot "só ataca" vence o recruta (2/2, sem aparar),
 o que contraria a meta do `CLAUDE.md`. Anotado para a Fase 4 (rebalanceamento), não mexido na
 Fase 1, que precisava ser idêntica ao legado.
+
+## 2026-09-28 — Fase 2: câmera
+
+- **Distância 3,6 → 4,5 m (+25%), pivô 1,52 → 1,62 m**, mesmo ombro e mesma inclinação baixa.
+  A câmera nunca fica a menos de 1,25 m do chão (antes 0,95), acima do topo típico da grama.
+- **Grama no caminho da visão**: no shader da grama, um cone entre a câmera e cada personagem em
+  foco (jogador e o alvo dele, se a menos de 10 m). Dentro do cone a haste baixa até ficar 32 cm
+  abaixo da linha de visão, afina 45% e se abre para o lado. Descartado: esconder hastes (buraco
+  visível) ou levantar muito a câmera (perde a sensação baixa da referência).
+- **Travar a mira**: Q (ou L) e botão do meio no PC; no celular, tocar no inimigo ou no botão
+  "mira". Com a mira travada, mover o mouse / arrastar para o lado troca de alvo (limiar de
+  arrasto + recarga de 0,3 s) em vez de girar a câmera. Se o alvo cai, passa para o inimigo
+  mais próximo que ainda luta (até 10 m), senão solta. Implementado como `forcedTarget` no
+  lutador: sem mira travada, o combate é idêntico.
+- **Enquadrar o grupo**: "em combate" = inimigos atentos a menos de 11 m (mesmo sem sacar a
+  espada). A câmera mira no centro do grupo (alvo com peso 2) e recua até 3,2 m a mais para
+  que todos caibam em 78% da largura da tela.

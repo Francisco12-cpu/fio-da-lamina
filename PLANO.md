@@ -22,12 +22,12 @@ bloquear o resto.
 - [x] Screenshots iguais ao legado nas 4 cenas (pixel a pixel).
 - [x] Bots com resultado idêntico ao legado (mesmo JSON).
 
-### Fase 2 — câmera
-- [ ] 2.1 Afastar ~25% (3,6 → 4,5 m) e subir o pivô (1,52 → 1,62 m). Pronto: screenshot da clareira e da trilha mostra o corpo inteiro com mais campo.
-- [ ] 2.2 Grama não tapa a visão: hastes afinam e se abrem no cone câmera→personagem; câmera sempre acima do topo da grama. Pronto: cena "grupo" mostra o jogador e os inimigos sem grama na frente; grama continua no resto.
-- [ ] 2.3 Travar a mira: tecla Q / botão do meio (PC), toque no inimigo ou botão novo (celular); trocar arrastando/movendo o mouse para o lado. Pronto: teste automático trava, troca de alvo e solta; screenshot com marcador.
-- [ ] 2.4 Enquadrar o grupo: a câmera recua e se orienta para caber os inimigos próximos. Pronto: screenshot "grupo" mostra os dois inimigos e o jogador.
-- [ ] Bots sem mudança (câmera não mexe no combate).
+### Fase 2 — câmera ✅
+- [x] 2.1 Afastar ~25% (3,6 → 4,5 m) e subir o pivô (1,52 → 1,62 m). Pronto: screenshot da clareira e da trilha mostra o corpo inteiro com mais campo.
+- [x] 2.2 Grama não tapa a visão: hastes afinam e se abrem no cone câmera→personagem; câmera sempre acima do topo da grama. Pronto: cena "grupo" mostra o jogador e os inimigos sem grama na frente; grama continua no resto.
+- [x] 2.3 Travar a mira: tecla Q / botão do meio (PC), toque no inimigo ou botão novo (celular); trocar arrastando/movendo o mouse para o lado. Pronto: teste automático trava, troca de alvo e solta; screenshot com marcador.
+- [x] 2.4 Enquadrar o grupo: a câmera recua e se orienta para caber os inimigos próximos. Pronto: screenshot "grupo" mostra os dois inimigos e o jogador.
+- [x] Bots sem mudança de perfil (câmera não mexe no combate).
 
 ### Fase 3a — arquitetura de animação
 - [ ] `AnimationController` por lutador: camadas corpo inteiro / parte de cima, crossfade curto, velocidade ajustada ao tempo do golpe.

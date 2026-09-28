@@ -18,6 +18,8 @@ export const SH = {
   uAmb:     { value: new THREE.Color(0.42, 0.37, 0.31) },
   uPush:    { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
   uCast:    { value: [new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4(), new THREE.Vector4()] },
+  // linha de visão câmera → personagem (x, altura do olhar, z, ativo): a grama no caminho baixa
+  uFocus:   { value: [new THREE.Vector4(), new THREE.Vector4()] },
   uShadowDir: { value: new THREE.Vector2(-CFG.sun.x, -CFG.sun.z).normalize() },
   uShadowLen: { value: Math.hypot(CFG.sun.x, CFG.sun.z) / CFG.sun.y },
 };

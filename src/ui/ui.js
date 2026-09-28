@@ -1,3 +1,4 @@
+import { Lock } from '../game/lockon.js';
 import { _v } from '../combat/moves.js';
 import { IS_TOUCH } from '../core/config.js';
 import { Input } from '../core/input.js';
@@ -13,6 +14,7 @@ export const UI = {
   vitEl: document.getElementById('vit'), hurtEl: document.getElementById('hurt'),
   pstabEl: document.getElementById('pstab'), pstabFill: document.querySelector('#pstab b'), pstabTrail: document.querySelector('#pstab i'), pTrail: 1, goodT: 0,
   bAtk: document.getElementById('bAtk'), bBlock: document.getElementById('bBlock'), bDodge: document.getElementById('bDodge'), ring: document.querySelector('#bAtk .ring'), ringC: document.querySelector('#bAtk .ring circle'),
+  lockEl: document.getElementById('lockMark'), bLock: document.getElementById('bLock'),
   good() { this.goodT = 0.35; this.bBlock.classList.add('good'); },
   fadeEl: document.getElementById('fade'), fadeText: document.getElementById('fadeText'),
   timer: 0, sticky: false, flashT: 0, hurtK: 0,
@@ -52,6 +54,16 @@ export const UI = {
       if (this.goodT > 0) { this.goodT -= dt; if (this.goodT <= 0) this.bBlock.classList.remove('good'); }
     }
     camera.updateMatrixWorld();
+    // marcador da mira travada, no peito do alvo
+    const lt = Lock.target;
+    let lv = false;
+    if (lt && lt.alive && Input.enabled) {
+      _v.set(lt.pos.x, lt.pos.y + 1.15, lt.pos.z).project(camera);
+      lv = _v.z < 1 && Math.abs(_v.x) < 1.05 && Math.abs(_v.y) < 1.05;
+      if (lv) { this.lockEl.style.transform = `translate(${((_v.x * 0.5 + 0.5) * innerWidth).toFixed(1)}px, ${((-_v.y * 0.5 + 0.5) * innerHeight).toFixed(1)}px)`; }
+    }
+    this.lockEl.classList.toggle('on', lv);
+    if (IS_TOUCH) this.bLock.classList.toggle('active', !!lt);
     for (const e of G.Encounters.enemies) {
       const show = e.aware && e.alive && Input.enabled;
       _v.set(e.pos.x, e.pos.y + 2.15, e.pos.z).project(camera);

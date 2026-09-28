@@ -197,6 +197,9 @@ export class Fighter {
       const d = Math.hypot(tg.pos.x - this.pos.x, tg.pos.z - this.pos.z);
       if (d < this.targetDist) { this.targetDist = d; this.target = tg; }
     }
+    // mira travada: o alvo escolhido manda, mesmo mais longe que o alcance normal
+    const ft = this.forcedTarget;
+    if (ft && ft.alive !== false) { this.target = ft; this.targetDist = Math.hypot(ft.pos.x - this.pos.x, ft.pos.z - this.pos.z); }
     const wx = it.wx, wz = it.wz, hasDir = it.mag > 0.05;
     const prevSt = this.st;
     this.st += dt;

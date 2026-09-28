@@ -17,6 +17,7 @@ export const GRASS_VS = /* glsl */`
   uniform vec3 uSunCol, uAmb, uSunDirU;
   uniform vec4 uPush[4];
   uniform vec4 uCast[4];
+  uniform vec4 uFocus[2];
   attribute vec4 aOffset;
   varying vec3 vCol; varying vec4 vFog;
   ${SKY_GLSL.split('vec3 fogToOutput')[0]}
@@ -41,12 +42,30 @@ export const GRASS_VS = /* glsl */`
     float pathTuft = step(0.86, fract(r1 * 91.7)) * 0.22;
     float h0 = uBladeH * mix(0.62, 1.3, r1 * r1) * clamp(hm.b, 0.0, 1.3) * mix(1.0, pathTuft, onPath) * keep;
 
+    // a grama nunca tapa a visão: no cone entre a câmera e cada personagem em foco, a haste
+    // baixa até ficar abaixo da linha de visão e se abre para o lado (continua existindo)
+    float thin = 0.0; vec2 part = vec2(0.0);
+    for (int i = 0; i < 2; i++) {
+      vec4 fc = uFocus[i];
+      if (fc.w <= 0.0) continue;
+      vec2 a = cameraPosition.xz, ab = fc.xz - a;
+      float L2 = dot(ab, ab) + 1e-4, sr = dot(wp - a, ab) / L2, s = clamp(sr, 0.0, 1.0);
+      vec2 cl = a + ab * s, lv = wp - cl;
+      float lat = length(lv), rad = mix(0.45, 0.95, s);
+      float cone = (1.0 - smoothstep(rad * 0.55, rad, lat)) * smoothstep(-0.05, 0.02, sr) * (1.0 - smoothstep(0.9, 1.02, sr)) * fc.w;
+      float lineY = mix(cameraPosition.y, fc.y, s) - hm.r;
+      float allowed = max(lineY - 0.32, 0.06);
+      h0 = mix(h0, min(h0, allowed), cone);
+      thin = max(thin, cone);
+      part += lv / (lat + 1e-3) * cone * 0.35;
+    }
+
     float h = position.y;
     float isPlume = step(0.7, fract(r2 * 17.0));
     float wTaper = 1.0 - h * 0.9;
     float wPlume = h < 0.58 ? 0.4 : 0.4 + sin((h - 0.58) / 0.42 * 3.14159) * 1.75;
     float width = uBladeW * mix(wTaper, wPlume, isPlume) * (1.0 - smoothstep(0.9, 1.0, h) * 0.92) * widen;
-    width *= mix(uNearCam, 1.0, smoothstep(4.0, 18.0, camD)) * mix(1.0, uFarWiden, smoothstep(22.0, 100.0, camD));
+    width *= mix(uNearCam, 1.0, smoothstep(4.0, 18.0, camD)) * mix(1.0, uFarWiden, smoothstep(22.0, 100.0, camD)) * (1.0 - 0.45 * thin);
 
     vec2 toCam = normalize(cameraPosition.xz - wp + 1e-4);
     vec2 camSide = vec2(-toCam.y, toCam.x);
@@ -57,7 +76,7 @@ export const GRASS_VS = /* glsl */`
     vec2 wperp = vec2(-uWindDir.y, uWindDir.x);
     float wave = sin(dot(wp, uWindDir) * 0.11 - uTime * 1.6 + sin(dot(wp, wperp) * 0.05) * 1.6) * 0.5 + 0.5;
     float flutter = sin(uTime * 2.8 + r1 * 31.0 + wp.x * 0.9 + wp.y * 0.6) * 0.5 + 0.5;
-    vec2 bend = uWindDir * (0.08 + 0.24 * wave + 0.07 * flutter) + rnd * (r1 - 0.5) * 0.16;
+    vec2 bend = uWindDir * (0.08 + 0.24 * wave + 0.07 * flutter) + rnd * (r1 - 0.5) * 0.16 + part;
 
     float shade = 1.0;
     for (int i = 0; i < 4; i++) {
@@ -138,7 +157,7 @@ export function makeGrass({ max, segs, bladeH, bladeW, nearCam, fadeStart, widen
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: SH.uTime, uHM: SH.uHM, uWorldSize: SH.uWorldSize, uWindDir: SH.uWindDir,
-      uPush: SH.uPush, uCast: SH.uCast, uShadowDir: SH.uShadowDir, uShadowLen: SH.uShadowLen,
+      uPush: SH.uPush, uCast: SH.uCast, uFocus: SH.uFocus, uShadowDir: SH.uShadowDir, uShadowLen: SH.uShadowLen,
       uSunCol: SH.uSunCol, uAmb: SH.uAmb, uSunDirU: SH.uSunDirU,
       uCenter: { value: new THREE.Vector3() }, uNearCenter: { value: new THREE.Vector3() }, uNearR: { value: 20 },
       uSize: { value: 50 }, uRadius: { value: 25 }, uFadeStart: { value: fadeStart }, uWiden: { value: widen },

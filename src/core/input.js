@@ -12,7 +12,8 @@ export const Input = {
   move: new THREE.Vector2(), run: false,
   lookDX: 0, lookDY: 0, lastLookTime: -99,
   locked: false, noLock: false, enabled: false,
-  buf: { attack: -9, dodge: -9, blockPress: -9 },
+  buf: { attack: -9, dodge: -9, blockPress: -9, lock: -9 },
+  tap: null,
   blockKey: false, blockMouse: false, blockTouch: false, atkKey: false, atkMouse: false, atkTouch: false,
   joy: { id: null, ox: 0, oy: 0, x: 0, y: 0 },
   look: { id: null, x: 0, y: 0 },
@@ -29,6 +30,7 @@ export const Input = {
       if (e.code === 'Space') { this.press('dodge'); e.preventDefault(); }
       if (e.code === 'KeyJ') { this.atkKey = true; this.press('attack'); }
       if (e.code === 'KeyK') { this.blockKey = true; this.press('blockPress'); }
+      if (e.code === 'KeyQ' || e.code === 'KeyL') this.press('lock');
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup', (e) => { this.keys.delete(e.code); if (e.code === 'KeyK') this.blockKey = false; if (e.code === 'KeyJ') this.atkKey = false; });
@@ -47,6 +49,7 @@ export const Input = {
       if (!this.enabled || !this.locked) return;
       if (e.button === 0) { this.atkMouse = true; this.press('attack'); }
       if (e.button === 2) { this.blockMouse = true; this.press('blockPress'); }
+      if (e.button === 1) { this.press('lock'); e.preventDefault(); }
     });
     document.addEventListener('mouseup', (e) => { if (e.button === 2) this.blockMouse = false; if (e.button === 0) this.atkMouse = false; });
 
@@ -55,6 +58,7 @@ export const Input = {
       canvas.focus();
       if (e.pointerType === 'mouse') {
         if (this.locked) return;
+        if (e.button === 1) { this.press('lock'); return; }
         if (e.button === 2) { this.blockMouse = true; this.press('blockPress'); return; }
         if (!this.noLock) { const p = canvas.requestPointerLock?.(); if (p && p.catch) p.catch(() => { this.noLock = true; }); }
         this.drag = { active: true, x: e.clientX, y: e.clientY, moved: 0 };
@@ -66,7 +70,7 @@ export const Input = {
         joyEl.style.display = 'block'; joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px';
         knob.style.transform = 'translate(0px, 0px)';
       } else if (this.look.id === null) {
-        this.look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        this.look = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now() };
       }
     });
     canvas.addEventListener('pointermove', (e) => {
@@ -98,7 +102,12 @@ export const Input = {
         this.drag.active = false; return;
       }
       if (e.pointerId === this.joy.id) { this.joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 }; joyEl.style.display = 'none'; joyEl.classList.remove('run'); }
-      if (e.pointerId === this.look.id) this.look = { id: null, x: 0, y: 0 };
+      if (e.pointerId === this.look.id) {
+        // toque curto e parado na metade direita: trava a mira no inimigo tocado
+        const L = this.look;
+        if (e.type === 'pointerup' && Math.hypot(e.clientX - L.x0, e.clientY - L.y0) < 12 && performance.now() - L.t0 < 300) this.tap = { x: e.clientX, y: e.clientY };
+        this.look = { id: null, x: 0, y: 0 };
+      }
     };
     canvas.addEventListener('pointerup', end);
     canvas.addEventListener('pointercancel', end);
@@ -113,6 +122,7 @@ export const Input = {
     };
     btn('bAtk', () => { this.atkTouch = true; this.press('attack'); }, () => { this.atkTouch = false; });
     btn('bDodge', () => this.press('dodge'));
+    btn('bLock', () => this.press('lock'));
     btn('bBlock', () => { this.blockTouch = true; this.press('blockPress'); }, () => { this.blockTouch = false; });
   },
   addLook(dx, dy) { this.lookDX += dx; this.lookDY += dy; this.lastLookTime = clock.elapsed; },

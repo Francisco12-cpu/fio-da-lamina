@@ -7,6 +7,7 @@ import { angDiff, clamp, damp, easeInOut, rand, vnoise, yawTo } from '../core/ut
 import { camera } from '../render/renderer.js';
 import { colliders } from '../world/props.js';
 import { terrain } from '../world/world.js';
+import { Lock } from './lockon.js';
 
 /* ================================================================
    CÂMERA — terceira pessoa baixa, enquadra o alvo em combate, tremor
@@ -26,16 +27,29 @@ export class CameraRig {
   punch(deg) { this.punchK = Math.min(8, this.punchK + deg); }
   snap(p) { this.pivot.set(p.x, p.y + CFG.camera.pivotH, p.z); }
   shake(a) { this.trauma = Math.min(1, this.trauma + a); }
-  update(dt, t, player, speed) {
+  update(dt, t, player, speed, enemies = []) {
     const C = CFG.camera;
+    const lock = Lock.target;
     const [dx, dy] = Input.consumeLook();
-    this.yaw -= dx; this.pitch = clamp(this.pitch - dy, C.pitchMin, C.pitchMax);
-    const tg = player.drawn ? player.target : null;
+    // mira travada: arrastar de lado troca de alvo em vez de girar a câmera
+    if (lock) Lock.addFlick(dx, player, enemies, t); else this.yaw -= dx;
+    this.pitch = clamp(this.pitch - dy, C.pitchMin, C.pitchMax);
+    // grupo: inimigos atentos por perto entram no enquadramento, não só o mais próximo
+    const group = player.alive ? enemies.filter((e) => e.alive && e.aware && e.pos.distanceTo(player.pos) < C.groupRange) : [];
+    let tg = lock || (player.drawn ? player.target : null);
+    if (!tg && group.length) tg = group.reduce((a, b) => (a.pos.distanceTo(player.pos) < b.pos.distanceTo(player.pos) ? a : b));
     const idle = t - Input.lastLookTime;
-    if (tg && idle > 0.7) {
-      // mantém o alvo dentro do enquadramento sem "grudar" a câmera nele
-      // câmera gira um pouco para a esquerda da linha até o alvo: jogador à esquerda, oponente à direita da tela
-      const d = angDiff(this.yaw, yawTo(player.pos, tg.pos) + 0.55), ex = Math.abs(d) - 0.14;
+    if (lock) {
+      const d = angDiff(this.yaw, yawTo(player.pos, lock.pos) + C.lockOffset), ex = Math.abs(d) - 0.03;
+      if (ex > 0) this.yaw += Math.sign(d) * ex * (1 - Math.exp(-dt * 6.0));
+    } else if (tg && idle > 0.7) {
+      // mantém o alvo (ou o centro do grupo) no quadro sem "grudar" a câmera nele
+      // câmera gira um pouco para a esquerda da linha até o alvo: jogador à esquerda, oponentes à direita da tela
+      let ax = tg.pos.x * 2, az = tg.pos.z * 2, n = 2;
+      for (const e of group) if (e !== tg) { ax += e.pos.x; az += e.pos.z; n++; }
+      const aim = _v.set(ax / n, 0, az / n);
+      const off = n > 2 ? 0.38 : 0.55;
+      const d = angDiff(this.yaw, yawTo(player.pos, aim) + off), ex = Math.abs(d) - 0.14;
       if (ex > 0) this.yaw += Math.sign(d) * ex * (1 - Math.exp(-dt * 3.0));
     } else if (!tg && speed > 0.5 && idle > 1.6) {
       const d = angDiff(this.yaw, player.yaw);
@@ -50,8 +64,22 @@ export class CameraRig {
     const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
     const fwd = new THREE.Vector3(-Math.sin(this.yaw) * cp, sp, -Math.cos(this.yaw) * cp);
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-    const want = C.dist + this.runK * 0.35 + this.intro * 2.2 + this.stanceK * C.stanceDist;
     const base = this.pivot.clone().addScaledVector(right, C.shoulder + this.stanceK * 0.22);
+    // recua o suficiente para todos do grupo caberem na largura da tela (com margem)
+    let groupD = 0;
+    if (group.length) {
+      const tanH = Math.tan(Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect)) * 0.78;
+      const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);
+      let need = 0;
+      for (const e of group) {
+        const vx = e.pos.x - base.x, vz = e.pos.z - base.z;
+        const lat = Math.abs(vx * right.x + vz * right.z) + 0.5, dep = vx * fx + vz * fz;
+        need = Math.max(need, lat / tanH - dep);
+      }
+      groupD = clamp(need - (C.dist + C.stanceDist), 0, C.groupMax);
+    }
+    this.groupK = damp(this.groupK || 0, groupD, 1.6, dt);
+    const want = C.dist + this.runK * 0.35 + this.intro * 2.2 + this.stanceK * C.stanceDist + this.groupK;
     let dist = want;
     for (let step = 0; step < 16; step++) {
       const cx = base.x - fwd.x * dist, cy = base.y - fwd.y * dist, cz = base.z - fwd.z * dist;

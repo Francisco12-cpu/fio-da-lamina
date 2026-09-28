@@ -26,6 +26,11 @@ export const SCENES = {
     const g = __game, E = g.Encounters.list[1];
     g.player.respawn({ x: E.center.x, z: E.center.z + 8 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(240);
   },
+  mira: () => {
+    const g = __game, E = g.Encounters.list[1];
+    g.player.respawn({ x: E.center.x, z: E.center.z + 8 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0; g.TOD.k = -1; g.step(120);
+    g.Lock.toggle(g.player, g.Encounters.enemies, g.rig.yaw); g.step(80);
+  },
 };
 
 const srv = legacy ? await staticServer(5175) : await viteServer(5174);

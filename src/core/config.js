@@ -7,8 +7,9 @@ export const CFG = {
   world:  { size: 800, hmRes: 512, seed: 1337 },
   player: { walk: 2.3, run: 5.6, stanceSpeed: 1.9, blockSpeed: 1.25, accel: 9, decel: 12, turnRate: 12, radius: 0.35 },
   camera: {
-    dist: 3.6, pivotH: 1.52, shoulder: 0.26, pitch: -0.13, pitchMin: -0.62, pitchMax: 0.24, stanceDist: 1.0,
-    fov: 58, fovRun: 63, mouseSens: 0.0022, touchSens: 0.0058, minClear: 0.95,
+    dist: 4.5, pivotH: 1.62, shoulder: 0.26, pitch: -0.13, pitchMin: -0.62, pitchMax: 0.24, stanceDist: 1.0,
+    fov: 58, fovRun: 63, mouseSens: 0.0022, touchSens: 0.0058, minClear: 1.25,
+    groupRange: 11, groupMax: 3.2, lockOffset: 0.36,
   },
   combat: {
     parryWindow: 0.16,   // s antes do contato em que apertar a defesa vira aparar
