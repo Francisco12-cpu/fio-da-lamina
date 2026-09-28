@@ -15,7 +15,7 @@
     E.enemies.forEach((e) => e.reset()); E.active = false; E.cleared = false; g.Director.reset();
     if (g.Standoff.active) g.Standoff.active = false;
     g.player.respawn({ x: E.center.x, z: E.center.z + 6 }, 0); g.rig.snap(g.player.pos); g.rig.yaw = 0;
-    g.Stats.parries = 0; g.Stats.decisive = 0;
+    g.Stats.parries = 0; g.Stats.decisive = 0; if (g.Later) g.Later.clear(); g.UI && g.UI.fade(false);
     if (g.onFightStart) g.onFightStart(E);
     const log = { playerHits: 0, parries: 0, broken: 0, blockedByEnemy: 0, enemyParried: 0, time: 0, result: 'timeout' };
     let lastH = g.player.health, pState = '';

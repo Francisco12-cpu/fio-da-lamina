@@ -5,7 +5,7 @@ import { COUNTER, GLINT, P, POSE, RUSH, STRONG, _b, _c, _down, _e, _m4, _one, _q
 import { FIGHTERS, Habits, Report, Stats } from '../combat/state.js';
 import { CFG } from '../core/config.js';
 import { angDiff, clamp, damp, easeInOut, easeOut, lerp, segSeg, smooth, yawTo } from '../core/util.js';
-import { Cloak } from './cloak.js';
+import { createAnimController } from '../anim/index.js';
 import { Trail, dustFx } from '../fx/fx.js';
 import { Fx } from '../game/camera.js';
 import { scene } from '../render/renderer.js';
@@ -36,72 +36,11 @@ export class Fighter {
     this.target = null; this.targetDist = 99; this.glintT = -1; this.ritualT = -1;
     this.swordPose = { ...POSE.draw };
     this.trail = new Trail();
-    this.build(o.look || {});
+    // o corpo e a animação ficam no controlador (procedural hoje; modelo 3D quando houver)
+    this.anim = createAnimController(this, o.look || {});
     FIGHTERS.push(this);
   }
   get alive() { return this.state !== 'dead'; }
-  build(look) {
-    const L = Object.assign({ cloth: 0x141110, pants: 0x1f1a17, skin: 0x6b4a36, cloak: 0x141110, hat: 'kasa', hatColor: 0x8d7240, band: 0x7a1d12 }, look);
-    const M = (c) => withRim(new THREE.MeshLambertMaterial({ color: c }));
-    const cloth = M(L.cloth), pants = M(L.pants), skin = M(L.skin);
-    const lacquer = M(0x100c0b), wrap = M(0x2a211a), brass = new THREE.MeshStandardMaterial({ color: 0x7a6436, metalness: 0.6, roughness: 0.45 });
-    const steel = new THREE.MeshStandardMaterial({ color: 0xd4d7da, metalness: 0.55, roughness: 0.28 });
-    const add = (parent, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
-    this.root = new THREE.Group();
-    this.body = new THREE.Group(); this.root.add(this.body);
-    this.hips = new THREE.Group(); this.hips.position.y = 0.92; this.body.add(this.hips);
-    this.legs = [-1, 1].map((s) => {
-      const g = new THREE.Group(); g.position.set(0.11 * s, 0, 0); this.hips.add(g);
-      add(g, new THREE.CapsuleGeometry(0.075, 0.68, 4, 8), pants, 0, -0.46, 0);
-      add(g, new THREE.BoxGeometry(0.1, 0.07, 0.24), M(0x0e0b09), 0, -0.88, -0.05);
-      return g;
-    });
-    this.torso = new THREE.Group(); this.hips.add(this.torso);
-    add(this.torso, new THREE.CapsuleGeometry(0.17, 0.42, 4, 10), cloth, 0, 0.34, 0);
-    this.arms = [-1, 1].map((s) => {
-      const g = new THREE.Group(); g.position.set(0.23 * s, 0.56, 0); this.torso.add(g);
-      add(g, new THREE.CapsuleGeometry(0.06, 0.5, 4, 8), cloth, 0, -0.3, 0);
-      return g;
-    });
-    this.head = new THREE.Group(); this.head.position.y = 0.74; this.torso.add(this.head);
-    add(this.head, new THREE.SphereGeometry(0.11, 16, 12), skin, 0, 0, 0);
-    this.hat = new THREE.Group(); this.hat.position.y = 0.09; this.head.add(this.hat);
-    if (L.hat === 'kasa') {
-      const straw = withBacklight(new THREE.MeshLambertMaterial({ color: L.hatColor, side: THREE.DoubleSide }), 0.5);
-      add(this.hat, new THREE.ConeGeometry(0.46, 0.2, 28, 1, true), straw, 0, 0.02, 0);
-      add(this.hat, new THREE.CylinderGeometry(0.03, 0.03, 0.03, 8), straw, 0, 0.13, 0);
-    } else if (L.hat === 'jingasa') {
-      add(this.hat, new THREE.ConeGeometry(0.36, 0.11, 24, 1, true), new THREE.MeshLambertMaterial({ color: L.hatColor, side: THREE.DoubleSide }), 0, -0.01, 0);
-    } else {
-      add(this.hat, new THREE.CylinderGeometry(0.035, 0.05, 0.12, 8), M(0x0c0a09), 0, 0.08, 0.03);
-      add(this.hat, new THREE.TorusGeometry(0.108, 0.018, 6, 18).rotateX(Math.PI / 2), M(L.band), 0, -0.04, 0);
-    }
-    this.scab = new THREE.Group(); this.scab.position.set(-0.22, 0.02, 0.02); this.scab.rotation.set(0.42, 0, 0.1); this.hips.add(this.scab);
-    add(this.scab, new THREE.CylinderGeometry(0.02, 0.018, 0.78, 8).rotateX(Math.PI / 2), lacquer, 0, 0, 0.32);
-    this.hipHilt = new THREE.Group(); this.scab.add(this.hipHilt);
-    add(this.hipHilt, new THREE.CylinderGeometry(0.045, 0.045, 0.012, 16).rotateX(Math.PI / 2), brass, 0, 0, -0.07);
-    add(this.hipHilt, new THREE.CylinderGeometry(0.018, 0.018, 0.26, 8).rotateX(Math.PI / 2), wrap, 0, 0, -0.21);
-    this.sword = new THREE.Group(); this.root.add(this.sword);
-    const bg = new THREE.BoxGeometry(0.008, 0.032, 0.86, 1, 1, 14); bg.translate(0, 0, -0.43);
-    const bp = bg.attributes.position;
-    for (let i = 0; i < bp.count; i++) {
-      const tt = clamp(-bp.getZ(i) / 0.86, 0, 1), w = tt > 0.9 ? 1 - ((tt - 0.9) / 0.1) * 0.85 : 1;
-      bp.setY(i, bp.getY(i) * w + 0.035 * tt * tt);
-    }
-    bg.computeVertexNormals();
-    add(this.sword, bg, steel, 0, 0, 0);
-    add(this.sword, new THREE.CylinderGeometry(0.045, 0.045, 0.012, 16).rotateX(Math.PI / 2), brass, 0, 0, 0);
-    add(this.sword, new THREE.CylinderGeometry(0.018, 0.018, 0.26, 8).rotateX(Math.PI / 2), wrap, 0, 0, 0.14);
-    const gm = new THREE.MeshBasicMaterial({ color: GLINT.red.clone(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-    this.glint = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), gm);
-    this.glint.position.set(0, 0.03, -0.95); this.glint.scale.setScalar(0.001); this.sword.add(this.glint);
-    this.sword.visible = false;
-    scene.add(this.root);
-    this.blob = new THREE.Mesh(BLOB_GEO, new THREE.MeshBasicMaterial({ map: BLOB_TEX, transparent: true, depthWrite: false, opacity: 0.55 }));
-    this.blob.renderOrder = 1; scene.add(this.blob);
-    this.cloth = new Cloak(this, L.cloak);
-    this.syncRoot();
-  }
   syncRoot() {
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.body.rotation.x = 0;
     this.root.updateMatrixWorld(true); this.cloth.reset();
@@ -314,7 +253,7 @@ export class Fighter {
     if (this.glintT >= 0) { this.glintT += dt; if (this.glintT > 0.42) this.glintT = -1; }
     this.regenStab(dt, t);
 
-    this.animate(dt, t, prevYaw);
+    this.anim.update(dt, t, prevYaw);
     this.cloth.update(dt, t);
     if (this.state === 'attack' && this.st > prevSt) this.sampleBlade(prevSt, this.st, targets, t);
     this.trail.update(dt);
@@ -325,6 +264,7 @@ export class Fighter {
     if (!chained && this.hitSet.size === 0) this.loseStab(this.isPlayer ? 6 : 10, t); // errar o golpe desequilibra um pouco
   }
 
+  movePoseAt(m, st, from, o) { return movePose(m, st, from, o); }
   bladeWorld(pose, outB, outT) {
     _e.set(pose.pitch, pose.yaw, pose.roll, 'YXZ'); _q.setFromEuler(_e);
     _m4.compose(_v.set(pose.hx, pose.hy, pose.hz), _q, _one).premultiply(this.root.matrixWorld);
@@ -350,8 +290,7 @@ export class Fighter {
     for (let k = 1; k <= n; k++) {
       const tt = t0 + ((t1 - t0) * k) / n;
       if (tt < a0 || tt > a1) continue;
-      movePose(m, tt, this.fromPose, pose);
-      this.bladeWorld(pose, _b, _t);
+      this.anim.bladeAt(m, tt, this.fromPose, _b, _t, pose);
       this.trail.push(_b, _t);
       if (tt < m.w || tt > m.w + m.a || this.state !== 'attack') continue;
       for (const tg of targets) {
@@ -359,105 +298,6 @@ export class Fighter {
         const hit = tg.hitTest(_b, _t);
         if (hit) { this.hitSet.add(tg); tg.onHit({ point: hit, from: this.pos, attacker: this, move: m, strong: !!m.strong, t: now }); }
       }
-    }
-  }
-  animate(dt, t, prevYaw) {
-    const C = this.speeds;
-    const speed = Math.hypot(this.vel.x, this.vel.z);
-    if (dt > 0) {
-      this.turnVel = damp(this.turnVel, angDiff(prevYaw, this.yaw) / dt, 10, dt);
-      this.accelF = damp(this.accelF, (speed - this.prevSpeed) / dt, 8, dt);
-    }
-    this.prevSpeed = speed;
-    const sn = speed / C.run, walkN = Math.min(1, speed / C.walk);
-    const inDodge = this.state === 'dodge', dead = this.state === 'dead';
-    this.phase += dt * speed * (speed > C.walk + 0.5 ? 2.0 : 2.5) * (inDodge || dead ? 0.3 : 1);
-    const stepIdx = Math.floor(this.phase / Math.PI);
-    if (stepIdx !== this.lastStep && speed > 0.6 && !inDodge) {
-      this.lastStep = stepIdx;
-      if (this.isPlayer) Sound.step(terrain.nearest(this.pos.x, this.pos.z).d < 1.3, speed > C.walk + 0.5);
-    }
-    const sw = Math.sin(this.phase), amp = dead ? 0 : lerp(0.45, 0.8, smooth(C.walk, C.run, speed)) * walkN;
-    this.legs[0].rotation.x = sw * amp; this.legs[1].rotation.x = -sw * amp;
-
-    let crouch = 0, leanX = sn * 0.2 + clamp(this.accelF, -4, 4) * 0.02, rollT = clamp(-this.turnVel * speed * 0.02, -0.18, 0.18), twistT = 0;
-    if (this.state === 'attack') {
-      const m = this.move, tt = this.st;
-      twistT = clamp(this.swordPose.yaw * 0.28, -0.55, 0.55);
-      if (tt > m.w && tt < m.w + m.a + 0.1) leanX += 0.22;
-      if (tt < m.w && m.heavy) crouch = 0.1 * Math.min(1, tt / m.w); else crouch = 0.05;
-    } else if (this.state === 'block') { twistT = 0.2; crouch = 0.06; }
-    else if (inDodge) {
-      const k = Math.sin(Math.PI * clamp(this.st / CFG.combat.dodge.dur, 0, 1));
-      crouch = 0.16 * k;
-      const lx = this.dodgeDir.x * Math.cos(this.yaw) - this.dodgeDir.y * Math.sin(this.yaw);
-      const lz = this.dodgeDir.x * Math.sin(this.yaw) + this.dodgeDir.y * Math.cos(this.yaw);
-      leanX += -lz * 0.35 * k; rollT += -lx * 0.3 * k;
-    } else if (this.state === 'hurt' || this.state === 'recoil') { leanX -= 0.35 * Math.max(0, 1 - this.st / 0.4); }
-    else if (this.state === 'stagger') { leanX -= 0.3; rollT += Math.sin(this.st * 7) * 0.08; crouch = 0.08; }
-    else if (this.state === 'broken') { leanX -= 0.42; rollT += Math.sin(this.st * 5) * 0.14; crouch = 0.18; }
-    else if (this.drawn && this.target) crouch = 0.05;
-
-    this.hips.position.y = 0.92 - crouch - Math.abs(Math.cos(this.phase)) * 0.035 * walkN + Math.sin(t * 1.8) * 0.004 * (1 - walkN);
-    this.lean = damp(this.lean, leanX, 10, dt); this.roll = damp(this.roll, rollT, 10, dt); this.twist = damp(this.twist, twistT, 18, dt);
-    this.torso.rotation.set(-this.lean, this.twist, this.roll);
-    this.head.rotation.set(this.lean * 0.6, -this.twist * 0.6, 0);
-    this.hat.rotation.set(Math.sin(this.phase * 2) * 0.02 * walkN, 0, Math.sin(this.phase) * 0.015 * walkN);
-    let fallT = 0;
-    if (this.state === 'down') fallT = this.st < 1.5 ? 1.35 : 1.35 * Math.max(0, 1 - (this.st - 1.5) / 0.45);
-    if (dead) fallT = 1.45;
-    this.body.rotation.x = damp(this.body.rotation.x, fallT, (this.state === 'down' && this.st < 1.5) || dead ? 7 : 12, dt);
-
-    this.hipHilt.visible = !this.drawn; this.sword.visible = this.drawn && !dead;
-    if (this.drawn && this.ritualT >= 0 && this.state === 'move') {
-      // sacode o sangue da lâmina, segura, e guarda devagar
-      this.ritualT += dt;
-      const r = this.ritualT, FLICK = P(0.55, 1.02, -0.38, -2.3, -0.3, -1.3);
-      if (r < 0.22) lerpPose(this.ritualFrom, FLICK, easeOut(r / 0.22), this.swordPose);
-      else if (r < 0.62) lerpPose(FLICK, FLICK, 0, this.swordPose);
-      else lerpPose(FLICK, POSE.draw, easeInOut(Math.min(1, (r - 0.62) / 0.42)), this.swordPose);
-      if (r > 0.05 && !this.ritualSw) { this.ritualSw = true; Sound.swoosh(0.55); }
-      if (r >= 1.04) { this.ritualSw = false; this.sheathe(); }
-    } else if (this.ritualT >= 0 && this.state !== 'move') this.ritualT = -1;
-    if (this.drawn) {
-      if (this.ritualT >= 0) {}
-      else if (this.state === 'attack') movePose(this.move, this.st, this.fromPose, this.swordPose);
-      else {
-        let tp = POSE.guard;
-        if (this.state === 'block') tp = this.parryAnim > 0.16 ? POSE.parry : POSE.block;
-        else if (this.state === 'hurt' || this.state === 'down' || this.state === 'recoil') tp = POSE.hurt;
-        else if (this.state === 'stagger') tp = POSE.stun;
-        else if (this.state === 'broken') tp = POSE.broken;
-        const g = { ...tp };
-        if (tp === POSE.guard) { g.yaw += Math.sin(t * 1.3 + this.pos.x) * 0.03; g.pitch += Math.sin(t * 0.9) * 0.02; g.hy += Math.sin(this.phase * 2) * 0.012 * walkN; }
-        lerpPose(this.swordPose, g, 1 - Math.exp(-dt * (this.parryAnim > 0 ? 40 : 22)), this.swordPose);
-      }
-      if (this.drawT < 1) this.drawT = Math.min(1, this.drawT + dt / 0.2);
-      const sp = this.drawT < 1 ? lerpPose(POSE.draw, this.swordPose, easeOut(this.drawT)) : this.swordPose;
-      _e.set(sp.pitch, sp.yaw, sp.roll, 'YXZ');
-      this.sword.position.set(sp.hx, sp.hy - (0.92 - this.hips.position.y), sp.hz);
-      this.sword.quaternion.setFromEuler(_e);
-    }
-    const gk = this.glintT >= 0 ? Math.sin(Math.min(1, this.glintT / 0.38) * Math.PI) : 0;
-    this.glint.scale.setScalar(Math.max(0.001, gk * 1.1));
-    this.root.position.copy(this.pos);
-    this.root.rotation.y = this.yaw;
-    this.root.updateMatrixWorld(true);
-    const lying = dead || this.state === 'down';
-    this.blob.position.set(this.pos.x - Math.sin(this.yaw) * (lying ? 0.7 : 0), this.pos.y + 0.03, this.pos.z - Math.cos(this.yaw) * (lying ? 0.7 : 0));
-    this.blob.scale.set(lying ? 1.3 : 1.05, 1, lying ? 2.0 : 1.05);
-    this.blob.rotation.y = this.yaw;
-
-    if (this.drawn && !dead) {
-      const hand = this.sword.getWorldPosition(_v);
-      const back = _v2.set(0, 0, 0.17).applyMatrix4(this.sword.matrixWorld);
-      [[this.arms[1], hand], [this.arms[0], back]].forEach(([arm, w]) => {
-        const local = arm.parent.worldToLocal(_c.copy(w)).sub(arm.position);
-        if (local.lengthSq() > 1e-6) arm.quaternion.setFromUnitVectors(_down, local.normalize());
-      });
-    } else {
-      this.arms[0].quaternion.setFromEuler(_e.set(-sw * amp * 0.5, 0, 0, 'XYZ'));
-      this.arms[1].quaternion.setFromEuler(_e.set(sw * amp * 0.5, 0, 0, 'XYZ'));
     }
   }
 }

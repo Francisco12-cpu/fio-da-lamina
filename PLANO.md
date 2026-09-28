@@ -29,9 +29,9 @@ bloquear o resto.
 - [x] 2.4 Enquadrar o grupo: a câmera recua e se orienta para caber os inimigos próximos. Pronto: screenshot "grupo" mostra os dois inimigos e o jogador.
 - [x] Bots sem mudança de perfil (câmera não mexe no combate).
 
-### Fase 3a — arquitetura de animação
-- [ ] `AnimationController` por lutador: camadas corpo inteiro / parte de cima, crossfade curto, velocidade ajustada ao tempo do golpe.
-- [ ] O boneco procedural vira `ProceduralBody` (uma implementação da interface). Pronto: screenshots e bots iguais aos da Fase 2.
+### Fase 3a — arquitetura de animação ✅
+- [x] `AnimationController` por lutador: camadas corpo inteiro / parte de cima, crossfade curto, velocidade ajustada ao tempo do golpe.
+- [x] O boneco procedural vira `ProceduralController` (uma implementação da interface). Pronto: screenshots e bots iguais aos da Fase 2.
 
 ### Fase 4 — combate mais realista
 - [ ] 4.1 Sem estabilidade, golpe de espada/lança mata (jogador e inimigos).

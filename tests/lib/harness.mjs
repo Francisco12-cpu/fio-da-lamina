@@ -51,10 +51,12 @@ export async function openGame(browser, url, { w = 960, h = 540 } = {}) {
   const pg = await browser.newPage({ viewport: { width: w, height: h } });
   const logs = [];
   pg.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') logs.push(m.type() + ': ' + m.text()); });
-  pg.on('pageerror', (e) => logs.push('ERR: ' + e.message));
+  pg.on('pageerror', (e) => logs.push('ERR: ' + String(e.stack || e.message).split(String.fromCharCode(10)).slice(0, 4).join(' <- ')));
   await pg.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   await pg.addInitScript(() => { HTMLCanvasElement.prototype.requestPointerLock = () => Promise.resolve(); });
   await pg.goto(url);
-  await pg.waitForFunction(() => window.__game, null, { timeout: 120000 });
+  try { await pg.waitForFunction(() => window.__game || window.__fatal, null, { timeout: 120000 }); }
+  catch (e) { throw new Error('jogo não abriu: ' + logs.join(' | ')); }
+  if (!(await pg.evaluate(() => !!window.__game))) throw new Error('jogo não abriu: ' + logs.join(' | '));
   return { pg, logs };
 }

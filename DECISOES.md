@@ -51,3 +51,19 @@ Fase 1, que precisava ser idêntica ao legado.
 - **Enquadrar o grupo**: "em combate" = inimigos atentos a menos de 11 m (mesmo sem sacar a
   espada). A câmera mira no centro do grupo (alvo com peso 2) e recua até 3,2 m a mais para
   que todos caibam em 78% da largura da tela.
+
+## 2026-09-28 — Fase 3a: arquitetura de animação
+
+- **`AnimationController` (src/anim/controller.js)**: um por lutador. Traduz o estado de combate em
+  ações em duas camadas (`full`: andar, esquiva, reação, queda, morte; `upper`: guarda, defesa,
+  golpes), com crossfade curto (0,14 s / 0,08 s). `movePhase()` converte o tempo do golpe em três
+  trechos (preparação, ativo, recuperação): quem anima só precisa respeitar esses trechos.
+- **Boneco procedural = `ProceduralController`** (src/anim/procedural.js). Código movido sem
+  mudança de lógica; prova: bots idênticos antes/depois.
+- **Fábrica `createAnimController`** com registro: quando o modelo 3D carregar, ele se registra e
+  passa a ser usado; se falhar, o boneco continua.
+- **`bladeAt()`** no controlador: o teste de acerto pede a posição da lâmina ao controlador. No
+  boneco vem das poses de dados; no modelo pode vir do osso da mão.
+- **Agendador `Later` no lugar de `setTimeout`** (ritual da espada, fade da morte, dicas). O
+  `setTimeout` dependia do relógio da máquina e deixava os bots não determinísticos entre
+  versões do código. Com `Later`, rodado dentro do `update()`, o jogo real se comporta igual.

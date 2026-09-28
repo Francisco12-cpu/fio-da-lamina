@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Sound } from '../audio/sound.js';
 import { Director } from '../combat/director.js';
-import { G } from '../core/time.js';
+import { G, Later } from '../core/time.js';
 import { yawTo } from '../core/util.js';
 import { Enemy } from '../fighters/enemy.js';
 import { Game } from './game.js';
@@ -44,9 +44,9 @@ export const Encounters = {
       }
       if (E.active && E.enemies.every((e) => !e.alive)) {
         E.cleared = true; G.player.health = G.player.maxHealth;
-        setTimeout(() => { if (!G.player.target) G.player.ritual(); }, 900);
+        Later.after(0.9, () => { if (!G.player.target) G.player.ritual(); });
         if (i === this.list.length - 1) Game.finish();
-        else setTimeout(() => UI.hint('Siga a trilha', 4), 1200);
+        else Later.after(1.2, () => UI.hint('Siga a trilha', 4));
       }
     }
   },

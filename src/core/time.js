@@ -21,3 +21,17 @@ export function advanceSim(dt) { simT += dt; }
 export function resetSim(v = 0) { simT = v; }
 // registro das instâncias do topo (jogador, boneco, câmera, encontros): evita ciclos de import
 export const G = {};
+// agendador no tempo real do loop (antes era setTimeout): mesmo efeito no jogo, e nos testes
+// determinísticos o momento depende só dos quadros simulados, não da velocidade da máquina
+export const Later = {
+  q: [],
+  after(sec, fn) { this.q.push({ t: clock.elapsed + sec, fn }); },
+  run() {
+    if (!this.q.length) return;
+    const now = clock.elapsed, due = this.q.filter((x) => x.t <= now);
+    if (!due.length) return;
+    this.q = this.q.filter((x) => x.t > now);
+    for (const x of due) x.fn();
+  },
+  clear() { this.q.length = 0; },
+};

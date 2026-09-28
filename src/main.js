@@ -36,7 +36,7 @@ import { Habits, Report, Stats } from './combat/state.js';
 import { CLEARING, DUMMY_POS, IS_TOUCH, SUN, URLP } from './core/config.js';
 import { Input } from './core/input.js';
 import { Quality, TIERS } from './core/quality.js';
-import { G, Time, advanceSim, clock, simT } from './core/time.js';
+import { G, Later, Time, advanceSim, clock, simT } from './core/time.js';
 import { damp } from './core/util.js';
 import { Dummy } from './fighters/dummy.js';
 import { Player } from './fighters/player.js';
@@ -90,7 +90,7 @@ function start() {
     if (p && p.catch) p.catch(() => { Input.noLock = true; });
   }
   canvas.focus();
-  setTimeout(() => Training.show(), 900);
+  Later.after(0.9, () => Training.show());
 }
 startEl.addEventListener('click', start);
 startEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); } });
@@ -113,6 +113,7 @@ function update(realDt) {
   const t = clock.elapsed;
   const dt = Panel.open ? 0 : Time.step(realDt);
   advanceSim(dt);
+  Later.run();
   SH.uTime.value = simT;
 
   Input.update();
@@ -182,5 +183,5 @@ Quality.apply(URLP.has('q') ? +URLP.get('q') : (IS_TOUCH ? 1 : 3));
 if (!URLP.has('test')) Panel.init();
 if (!TEST) requestAnimationFrame((n) => { clock.last = n; frame(n); });
 document.getElementById('loading').classList.add('gone');
-window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock,
+window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI,
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) update(dt); render(); } };
