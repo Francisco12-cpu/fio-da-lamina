@@ -21,12 +21,14 @@ export class ProceduralController extends AnimationController {
   build(look) {
     const f = this.f;
     this.drops = []; this.swordDropped = false; this.hatDropped = false; this.fallSide = 1;
-    const L = Object.assign({ cloth: 0x141110, pants: 0x1f1a17, skin: 0x6b4a36, cloak: 0x141110, hat: 'kasa', hatColor: 0x8d7240, band: 0x7a1d12 }, look);
-    const M = (c) => withRim(new THREE.MeshLambertMaterial({ color: c }));
+    const L = (this.look = Object.assign({ cloth: 0x141110, pants: 0x1f1a17, skin: 0x6b4a36, cloak: 0x141110, hat: 'kasa', hatColor: 0x8d7240, band: 0x7a1d12 }, look));
+    this.buildBody(L);
+    this.buildGear(L);
+  }
+  // corpo de cápsulas (só no boneco procedural)
+  buildBody(L) {
+    const f = this.f, M = this.M, add = this.add;
     const cloth = M(L.cloth), pants = M(L.pants), skin = M(L.skin);
-    const lacquer = M(0x100c0b), wrap = M(0x2a211a), brass = new THREE.MeshStandardMaterial({ color: 0x7a6436, metalness: 0.6, roughness: 0.45 });
-    const steel = new THREE.MeshStandardMaterial({ color: 0xd4d7da, metalness: 0.55, roughness: 0.28 });
-    const add = (parent, geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
     f.root = new THREE.Group();
     f.body = new THREE.Group(); f.root.add(f.body);
     f.hips = new THREE.Group(); f.hips.position.y = 0.92; f.body.add(f.hips);
@@ -45,6 +47,15 @@ export class ProceduralController extends AnimationController {
     });
     f.head = new THREE.Group(); f.head.position.y = 0.74; f.torso.add(f.head);
     add(f.head, new THREE.SphereGeometry(0.11, 16, 12), skin, 0, 0, 0);
+  }
+  M(c) { return withRim(new THREE.MeshLambertMaterial({ color: c })); }
+  add(parent, geo, mat, x, y, z) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; }
+  // equipamento comum a todos os corpos: chapéu, bainha, arma, escudo, brilho, sombra, capa
+  // (o corpo precisa ter criado f.root, f.hips, f.torso e f.head antes)
+  buildGear(L) {
+    const f = this.f, M = this.M, add = this.add;
+    const lacquer = M(0x100c0b), wrap = M(0x2a211a), brass = new THREE.MeshStandardMaterial({ color: 0x7a6436, metalness: 0.6, roughness: 0.45 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0xd4d7da, metalness: 0.55, roughness: 0.28 });
     f.hat = new THREE.Group(); f.hat.position.y = 0.09; f.head.add(f.hat);
     this.hatKind = L.hat; this.hatR = L.hat === 'kasa' ? 0.46 : 0.36;
     if (L.hat === 'kasa') {
@@ -103,6 +114,15 @@ export class ProceduralController extends AnimationController {
     f.syncRoot();
   }
   pose(dt, t, prevYaw) {
+    const k = this.kin(dt, t, prevYaw);
+    this.bodyPose(k, dt, t);
+    this.dropStep(k, dt);
+    this.swordStep(k, dt, t);
+    this.placeRoot(k);
+    this.armsPose(k, dt);
+  }
+  // estado comum do corpo (passos, inclinação, agachamento, morte) — igual para todos os corpos
+  kin(dt, t, prevYaw) {
     const f = this.f;
     const C = f.speeds;
     const speed = Math.hypot(f.vel.x, f.vel.z);
@@ -120,7 +140,6 @@ export class ProceduralController extends AnimationController {
       if (f.isPlayer) Sound.step(terrain.nearest(f.pos.x, f.pos.z).d < 1.3, speed > C.walk + 0.5);
     }
     const sw = Math.sin(f.phase), amp = dead ? 0 : lerp(0.45, 0.8, smooth(C.walk, C.run, speed)) * walkN;
-    f.legs[0].rotation.x = sw * amp; f.legs[1].rotation.x = -sw * amp;
 
     let crouch = 0, leanX = sn * 0.2 + clamp(f.accelF, -4, 4) * 0.02, rollT = clamp(-f.turnVel * speed * 0.02, -0.18, 0.18), twistT = 0;
     if (f.state === 'attack') {
@@ -148,26 +167,39 @@ export class ProceduralController extends AnimationController {
     // morte: os joelhos cedem, cai de joelhos, depois tomba para a frente
     let kneel = 0, fall = 0;
     if (dead) { kneel = smooth(0, 0.42, f.st); fall = smooth(0.5, 1.25, f.st); crouch = 0.42 * kneel + 0.3 * fall; leanX = 0.45 * kneel + 1.05 * fall; rollT = 0.22 * fall * (this.fallSide || 1); }
-
-    f.hips.position.y = 0.92 - crouch - Math.abs(Math.cos(f.phase)) * 0.035 * walkN + Math.sin(t * 1.8) * 0.004 * (1 - walkN);
-    f.torso.position.y = breathY;
-    if (dead) { f.lean = leanX; f.roll = damp(f.roll, rollT, 8, dt); f.legs[0].rotation.x = -1.0 * kneel - 0.45 * fall; f.legs[1].rotation.x = -0.9 * kneel - 0.5 * fall; }
+    const hipsY = 0.92 - crouch - Math.abs(Math.cos(f.phase)) * 0.035 * walkN + Math.sin(t * 1.8) * 0.004 * (1 - walkN);
+    if (dead) { f.lean = leanX; f.roll = damp(f.roll, rollT, 8, dt); }
     else { f.lean = damp(f.lean, leanX, 10, dt); f.roll = damp(f.roll, rollT, 10, dt); }
     f.twist = damp(f.twist, twistT, 18, dt);
+    return { speed, sn, walkN, inDodge, dead, sw, amp, crouch, breathY, kneel, fall, hipsY, drop: 0.92 - hipsY, spear: f.weaponKind === 'spear' };
+  }
+  // cápsulas
+  bodyPose(k, dt, t) {
+    const f = this.f, { sw, amp, dead, kneel, fall, walkN } = k;
+    f.legs[0].rotation.x = sw * amp; f.legs[1].rotation.x = -sw * amp;
+    f.hips.position.y = k.hipsY;
+    f.torso.position.y = k.breathY;
+    if (dead) { f.legs[0].rotation.x = -1.0 * kneel - 0.45 * fall; f.legs[1].rotation.x = -0.9 * kneel - 0.5 * fall; }
     f.torso.rotation.set(-f.lean, f.twist, f.roll);
     f.head.rotation.set(f.lean * 0.6 + (dead ? 0.35 * kneel : 0), -f.twist * 0.6, 0);
     f.hat.rotation.set(Math.sin(f.phase * 2) * 0.02 * walkN, 0, Math.sin(f.phase) * 0.015 * walkN);
     let fallT = 0;
     if (f.state === 'down') fallT = f.st < 1.5 ? 1.35 : 1.35 * Math.max(0, 1 - (f.st - 1.5) / 0.45);
     f.body.rotation.x = damp(f.body.rotation.x, fallT, f.state === 'down' && f.st < 1.5 ? 7 : 12, dt);
-    // a espada cai da mão e o chapéu rola
-    if (dead) {
+  }
+  // a espada cai da mão e o chapéu rola
+  dropStep(k, dt) {
+    const f = this.f;
+    if (k.dead) {
       if (f.st > 0.22 && f.drawn && !this.swordDropped) this.dropSword();
       if (f.st > 0.55 && !this.hatDropped && this.hatKind !== 'topknot') this.dropHat();
     }
     this.updateDrops(dt);
-
-    const spear = f.weaponKind === 'spear';
+  }
+  // pose da espada (dados de combate) — o estado da espada influencia o golpe seguinte,
+  // então esta parte é idêntica em todos os corpos
+  swordStep(k, dt, t) {
+    const f = this.f, { dead, spear, walkN } = k;
     f.hipHilt.visible = !f.drawn && !spear; f.sword.visible = this.swordDropped || ((f.drawn || spear) && !dead);
     if (f.drawn && f.ritualT >= 0 && f.state === 'move') {
       // sacode o sangue da lâmina, segura, e guarda devagar
@@ -197,10 +229,10 @@ export class ProceduralController extends AnimationController {
       if (f.drawT < 1) f.drawT = Math.min(1, f.drawT + dt / 0.2);
       const sp = f.drawT < 1 ? lerpPose(POSE.draw, f.swordPose, easeOut(f.drawT)) : f.swordPose;
       _e.set(sp.pitch, sp.yaw, sp.roll, 'YXZ');
-      if (!this.swordDropped) { f.sword.position.set(sp.hx, sp.hy - (0.92 - f.hips.position.y), sp.hz); f.sword.quaternion.setFromEuler(_e); }
+      if (!this.swordDropped) { f.sword.position.set(sp.hx, sp.hy - k.drop, sp.hz); f.sword.quaternion.setFromEuler(_e); }
     } else if (spear && !this.swordDropped) {
       // lança guardada: de pé, ao lado do corpo
-      _e.set(1.45, 0, 0, 'YXZ'); f.sword.position.set(0.3, 0.95 - (0.92 - f.hips.position.y), -0.08); f.sword.quaternion.setFromEuler(_e);
+      _e.set(1.45, 0, 0, 'YXZ'); f.sword.position.set(0.3, 0.95 - k.drop, -0.08); f.sword.quaternion.setFromEuler(_e);
     }
     if (f.shieldG) {
       // escudo à frente na guarda; no empurrão avança com o corpo
@@ -208,16 +240,23 @@ export class ProceduralController extends AnimationController {
       if (f.state === 'attack' && f.move && f.move.bash) { const m = f.move; sz = -0.24 - 0.34 * smooth(m.w * 0.5, m.w, f.st) * (1 - smooth(m.w + m.a, m.w + m.a + m.r, f.st)); }
       f.shieldG.position.z = damp(f.shieldG.position.z, sz, 18, dt);
     }
+  }
+  placeRoot(k) {
+    const f = this.f;
     const gk = f.glintT >= 0 ? Math.sin(Math.min(1, f.glintT / 0.38) * Math.PI) : 0;
     f.glint.scale.setScalar(Math.max(0.001, gk * 1.1));
     f.root.position.copy(f.pos);
     f.root.rotation.y = f.yaw;
     f.root.updateMatrixWorld(true);
-    const lying = dead || f.state === 'down';
+    const lying = k.dead || f.state === 'down';
     f.blob.position.set(f.pos.x - Math.sin(f.yaw) * (lying ? 0.7 : 0), f.pos.y + 0.03, f.pos.z - Math.cos(f.yaw) * (lying ? 0.7 : 0));
     f.blob.scale.set(lying ? 1.3 : 1.05, 1, lying ? 2.0 : 1.05);
     f.blob.rotation.y = f.yaw;
 
+  }
+  // braços de cápsula apontam para a empunhadura (IK de um osso)
+  armsPose(k) {
+    const f = this.f, { dead, spear, sw, amp, fall } = k;
     if ((f.drawn || spear) && !dead) {
       const hand = f.sword.getWorldPosition(_v);
       // mão esquerda: mais atrás na haste (lança), no escudo, ou logo atrás da empunhadura
@@ -294,6 +333,8 @@ export class ProceduralController extends AnimationController {
       else { f.head.add(f.hat); f.hat.position.set(0, 0.09, 0); f.hat.quaternion.identity(); }
     }
     this.drops.length = 0; this.swordDropped = false; this.hatDropped = false;
-    f.torso.position.y = 0; f.legs.forEach((l) => (l.rotation.x = 0)); f.lean = 0; f.roll = 0;
+    f.lean = 0; f.roll = 0;
+    this.resetBody();
   }
+  resetBody() { const f = this.f; f.torso.position.y = 0; f.legs.forEach((l) => (l.rotation.x = 0)); }
 }

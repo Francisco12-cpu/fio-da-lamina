@@ -139,3 +139,31 @@ Resultado dos bots (6 lutas por combinação; duelo com 24):
   (hora do dia fixa em 42% durante o título). Dificuldade fácil/normal/difícil com descrição,
   guardada no navegador. Ao começar, corte com meio segundo de escuro para a câmera de jogo.
 - **Maestria** em cartões de papel com tinta e borda dourada; teclas 1 e 2, clique ou toque.
+
+## 2026-09-28 — Fase 3b: personagem 3D
+
+- **Modelo**: manequim da Universal Animation Library 2 (Quaternius, CC0), mesmo esqueleto das
+  animações. `tools/optimize_character.mjs` guarda só os 11 clipes usados, reamostra, quantiza e
+  comprime com Meshopt: 8,1 MB → 1,8 MB (`assets/characters/personagem.glb`).
+- **Por que um corpo híbrido**: o pacote Standard não tem andar com espada, correr, esquiva
+  lateral, morte nem golpes de katana a duas mãos. Então: pernas e corpo vêm dos clipes que servem
+  (Walk_Carry_Loop, Idle_Shield_Loop, Sword_Block, pés dos Sword_Regular_A/B/C, Sword_Dash na
+  esquiva, Hit_Knockback + LayToIdle na queda e ao levantar, LayToIdle ao contrário na morte:
+  agacha, senta e tomba). Braços por **IK de dois ossos** até a empunhadura das poses de dados.
+  Tronco e cabeça: inclinação/torção/respiração por cima do clipe, cabeça nivelada ao horizonte.
+- **Katana presa ao osso da mão direita**: a pega é medida no próprio esqueleto (dedos e polegar)
+  e a espada é recolocada pela mão depois do IK. Erro medido entre a mão e a pose de dados:
+  ≤ 4 cm em qualquer golpe, ≤ 2,6 cm na fase ativa (tests: medição no console de teste). O teste
+  de acerto continua usando as poses de dados em sub-passos, que coincidem com a lâmina na mão.
+  Consequência verificada: bots com o modelo e com o boneco (`?boneco`) dão resultado idêntico.
+- **Alcance**: o braço do manequim alcança 0,53 m; quando a pose pede mais, o corpo avança/abaixa
+  até 50 cm (horizontal) / 20 cm (vertical) durante o golpe — lê como um avanço mais fundo.
+- **Cor sem textura**: um atributo por vértice escolhe a parte pelo osso dominante (roupa, calça,
+  pele, sandália, juntas); o material (Lambert + contorno de luz) recebe a paleta de cada tipo.
+- **Armadilha do three.js encontrada**: o `AnimationMixer` só regrava um osso quando o valor do
+  clipe muda. Com clipes parados num quadro, os ajustes por cima (tronco, IK) acumulavam e o
+  tronco "dobrava". Solução: guardar o resultado limpo e restaurar esses ossos antes de cada
+  atualização.
+- **Reserva**: se o arquivo não carregar (ou com `?boneco` na URL), o boneco de cápsulas assume.
+- Carregamento com progresso na tela "Preparando o campo… N%" (top-level await no `main.js`;
+  build com alvo es2022).

@@ -12,7 +12,7 @@ const noUps = process.argv.includes('--noups');
 const out = arg('--out', path.join(ROOT, 'tests/out', legacy ? 'bots-legacy.json' : 'bots.json'));
 
 const srv = legacy ? await staticServer(5175) : await viteServer(5174);
-const url = legacy ? 'http://localhost:5175/legacy/index.html?test&noaudio&q=0' : 'http://localhost:5174/?test&noaudio&q=0';
+const url = legacy ? 'http://localhost:5175/legacy/index.html?test&noaudio&q=0' : 'http://localhost:5174/?test&noaudio&q=0' + (process.argv.includes('--boneco') ? '&boneco' : '');
 const b = await launch();
 const { pg, logs } = await openGame(b, url, { w: 320, h: 180 });
 await pg.addScriptTag({ content: fs.readFileSync(path.join(ROOT, 'tests/lib/bots.page.js'), 'utf8') });

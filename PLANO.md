@@ -54,9 +54,9 @@ bloquear o resto.
 - [x] UI de foco e de escolha de melhoria no mesmo estilo.
 Pronto: screenshots de cada tela em PC e celular (retrato bloqueado, paisagem).
 
-### Fase 3b — personagem 3D
-- [ ] Carregar o manequim da Universal Animation Library 2 (CC0) com `GLTFLoader`, trocar o corpo procedural por `SkinnedBody` (mesma interface), katana no osso da mão, lâmina animada no acerto, chapéu/capa/contorno/sombra mantidos, cor por tipo.
-- [ ] Fallback automático para o boneco procedural se o arquivo não carregar.
+### Fase 3b — personagem 3D ✅
+- [x] Carregar o manequim da Universal Animation Library 2 (CC0) com `GLTFLoader`, trocar o corpo procedural por `SkinnedBody` (mesma interface), katana no osso da mão, lâmina animada no acerto, chapéu/capa/contorno/sombra mantidos, cor por tipo.
+- [x] Fallback automático para o boneco procedural se o arquivo não carregar.
 Pronto: screenshots lado a lado, bots dentro das metas, FPS medido.
 
 ### Fase 6 — assets opcionais

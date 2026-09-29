@@ -3,3 +3,4 @@ dist/
 tests/screens/tmp/
 tests/out/
 *.log
+assets/characters/ual2/*.glb
