@@ -89,7 +89,6 @@ Input.init();
 
 const stats = document.getElementById('stats');
 let fpsAcc = 0, fpsN = 0, fpsT = 0;
-stats.addEventListener('click', (e) => { e.stopPropagation(); Panel.toggle(); });
 
 // ---------- título: dificuldade, controles, créditos ----------
 const startEl = document.getElementById('start');

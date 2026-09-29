@@ -5,7 +5,7 @@ import { UI } from './ui.js';
 import { TOD } from '../world/tod.js';
 
 /* ================================================================
-   PAINEL DE AJUSTE E RELATÓRIO — toque no contador de FPS (ou tecla P)
+   PAINEL DE AJUSTE E RELATÓRIO — só abre pelo menu de pausa (Esc/☰ → Ajustes)
    ================================================================ */
 export const Panel = {
   open: false, el: document.getElementById('panel'),
@@ -36,7 +36,6 @@ export const Panel = {
     el.querySelector('#pReport').addEventListener('click', () => this.copy(this.report(), 'Relatório copiado'));
     el.querySelector('#pSettings').addEventListener('click', () => this.copy('Ajustes do Fio da Lâmina: ' + JSON.stringify(this.settings), 'Ajustes copiados'));
     el.querySelector('#pReset').addEventListener('click', () => { this.settings = { tod: -1, fog: 1, glow: 1, rays: 1, exp: 1, parry: 160, q: -1 }; this.save(); location.reload(); });
-    addEventListener('keydown', (e) => { if (e.code === 'KeyP') this.toggle(); });
     if (S.q >= 0) { Quality.auto = false; Quality.apply(S.q); }
     this.apply(); this.refreshQ();
   },

@@ -1,7 +1,7 @@
 # Fio da Lâmina — regras do projeto
 
 Protótipo de combate com espada em 3D (Three.js), inspirado na sensação do Ghost of Tsushima,
-sem copiar nada proprietário. Leia `PROJETO.md` inteiro antes de mexer em qualquer coisa:
+sem copiar nada proprietário. Leia `docs/PROJETO.md` inteiro antes de mexer em qualquer coisa:
 ele tem o histórico, as decisões aprovadas e os números de balanceamento.
 
 ## Filosofia (vem do documento original do dono do projeto)
@@ -13,7 +13,7 @@ iluminação, som, estabilidade, performance, quantidade de conteúdo.
 - Entre tecnologia impressionante e tecnologia confiável: a confiável.
 - Não fazer: mundo aberto, inventário, árvore de habilidades, dezenas de inimigos ou armas,
   crafting, multiplayer, economia, quests, diálogos, IA de machine learning.
-- Ideias boas fora do escopo vão para a seção "Ideias futuras" do `PROJETO.md`, não para o código.
+- Ideias boas fora do escopo vão para a seção "Ideias futuras" do `docs/PROJETO.md`, não para o código.
 
 ## Idioma
 
@@ -25,13 +25,13 @@ Mensagens de commit em português.
 - Trabalhe em passos pequenos. Depois de CADA passo: rode o jogo, rode os testes, tire
   screenshots, compare com o esperado, e só então faça commit.
 - Nunca considere algo pronto só porque compila. Tem que funcionar como gameplay.
-- Registre toda decisão não trivial em `DECISOES.md` (o que, por quê, alternativa descartada).
-- Mantenha `PROJETO.md` atualizado ao fim de cada fase.
+- Registre toda decisão não trivial em `docs/DECISOES.md` (o que, por quê, alternativa descartada).
+- Mantenha `docs/PROJETO.md` atualizado ao fim de cada fase.
 - Se um asset esperado não estiver em `assets/`, não invente substituto de licença duvidosa:
-  continue com o boneco procedural e anote em `DECISOES.md`.
+  continue com o boneco procedural e anote em `docs/DECISOES.md`.
 - **Modelos 3D:** se `assets/characters/` estiver vazio, NÃO crie modelos na sessão principal.
   Mantenha o boneco procedural e deixe o `AnimationController` pronto. A criação de modelos é
-  uma sessão separada, com `PROMPT-CRIAR-MODELOS.md`.
+  uma sessão separada, com `docs/PROMPT-CRIAR-MODELOS.md`.
 - Nunca use personagens, modelos ou sons de jogos/franquias existentes (mesmo fan art gratuita).
 
 ## Testes automáticos (obrigatório)
@@ -65,4 +65,4 @@ Todo efeito novo precisa de versão leve ou desligável no nível "baixa"/"míni
 ## Publicação
 
 Build estático (Vite) que roda abertura direta e no GitHub Pages. Créditos de assets CC-BY em
-`CREDITS.md` e numa tela de créditos no jogo.
+`docs/CREDITS.md` e numa tela de créditos no jogo.

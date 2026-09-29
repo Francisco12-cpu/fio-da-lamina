@@ -102,6 +102,18 @@ const TESTS = {
     out.push(['reiniciar recoloca e cura', e.health === 2 && Math.hypot(e.pos.x - e.spawn.x, e.pos.z - e.spawn.z) < 0.2 && P.alive]);
     return out;
   },
+  // ajustes: só abrem pelo menu de pausa (Esc/☰ → Ajustes); nada de acesso direto pelo contador de FPS ou tecla P
+  ajustesSoPelaPausa: () => {
+    const g = __game, out = [];
+    document.getElementById('stats').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    out.push(['clicar no contador de FPS não abre os ajustes', !g.Panel.open]);
+    dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP', bubbles: true }));
+    out.push(['tecla P não abre os ajustes', !g.Panel.open]);
+    g.Pause.open(); g.Pause.actions.settings();
+    out.push(['Pausa → Ajustes abre o painel', g.Panel.open]);
+    g.Panel.toggle(false); g.Pause.close(false);
+    return out;
+  },
 };
 
 const v = await viteServer(5174);

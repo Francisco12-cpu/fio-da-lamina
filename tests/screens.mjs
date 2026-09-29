@@ -34,6 +34,7 @@ export const SCENES = {
   },
   titulo: () => { const g = __game; g.step(240); },
   treino: () => { const g = __game, P = g.player; P.respawn({ x: 1.5, z: 156 }, 0); g.rig.snap(P.pos); g.rig.yaw = 0; g.Training.step = 3; g.Training.show(); P.draw(); P.focus = 1; g.step(90); },
+  pausaAjustes: () => { const g = __game; g.step(60); g.Pause.open(); g.Pause.actions.settings(); },
   pausa: () => { const g = __game; g.step(60); g.Pause.open(); g.Pause.section('controls'); },
   novos: () => {
     const g = __game, E = g.Encounters.list[4];

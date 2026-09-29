@@ -213,3 +213,16 @@ Referência do legado (luta em dupla, CPU 4×): ~53 fps. Projeto novo na mesma l
 ~50–57 fps; com o modelo 3D: ~35–38 fps (o esqueleto + IK de 3–4 personagens custa ~6 ms na CPU
 lenta). A qualidade automática do celular continua descendo de nível abaixo de 26 fps.
 Compressão: o personagem vai em GLB com Meshopt (1,8 MB). Não há texturas (KTX2 não se aplica).
+
+## 2026-09-28 — Ajustes só pela pausa; documentação organizada em docs/
+
+- **Acesso ao painel de ajustes**: antes existiam três jeitos (clicar no contador de FPS, tecla P,
+  e o menu de pausa). Pedido do dono: só pela pausa. Removido o clique do contador de FPS e a
+  tecla P; o contador virou um `<div>` sem interação (só mostra FPS/qualidade). O botão ☰ continua
+  abrindo o painel direto **antes** de começar a jogar (não há pausa nesse momento) — isso não é
+  o "botão antigo", é o único jeito de ajustar qualidade na tela de título.
+- **Documentação em `docs/`**: `PROJETO.md`, `DECISOES.md`, `PLANO.md`, `RELATORIO.md`,
+  `CREDITS.md`, `PROMPT-INICIAL.md`, `PROMPT-CRIAR-MODELOS.md` movidos para `docs/`. `CLAUDE.md`
+  fica na raiz (é lido automaticamente pelo Claude Code só nesse lugar). Criado `README.md` na
+  raiz (não existia nenhum) com o link do jogo publicado e um mapa da documentação — o repositório
+  é público agora, então isso é a porta de entrada de quem visitar no GitHub.

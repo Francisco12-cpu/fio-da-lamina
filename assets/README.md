@@ -47,17 +47,17 @@ descompactar e copiar a pasta **glTF**.
 **Sketchfab:** criar conta grátis e entrar → abrir o modelo → o botão "Download 3D Model" fica
 logo abaixo do visualizador 3D (só aparece com login, e só em modelos marcados como
 "Downloadable"; no celular às vezes some, use o computador) → escolher **glTF** ou **GLB** →
-descompactar em `assets/characters/<nome>/` → anotar autor, licença e link em `CREDITS.md`.
+descompactar em `assets/characters/<nome>/` → anotar autor, licença e link em `../docs/CREDITS.md`.
 
 **Se nada disso for baixado:** tudo bem. A sessão principal do Claude Code mantém o boneco
 atual e deixa o código pronto; os modelos são criados depois numa sessão separada com
-`PROMPT-CRIAR-MODELOS.md`.
+`../docs/PROMPT-CRIAR-MODELOS.md`.
 
 ## Sons (Freesound, filtro de licença CC0) — `assets/sounds/`
 
 https://freesound.org — buscar: "katana clash", "sword parry", "sword unsheathe",
 "sword sheath", "sword swoosh", "footsteps grass", "wind field", "cicada", "crickets",
-"taiko", "koto". Guarde o link de cada som em `CREDITS.md` mesmo sendo CC0.
+"taiko", "koto". Guarde o link de cada som em `../docs/CREDITS.md` mesmo sendo CC0.
 
 ## Céu (Poly Haven, CC0) — `assets/hdri/`
 
@@ -76,7 +76,7 @@ Um HDRI de tarde e um de pôr do sol em campo aberto.
 variações com `-1`, `-2`… são sorteadas. Qualquer um que falte continua sintetizado.
 `aparar`, `defesa`, `defesa-forte`, `golpe-ar`, `corte`, `sacar`, `guardar`, `passo-grama`,
 `passo-terra`, `vento` (laço), `cigarras` (laço), `grilos` (laço), `taiko`, `koto` (uma nota
-em Ré, 146,83 Hz — o jogo muda a altura). Lembre de anotar autor/link em `CREDITS.md`.
+em Ré, 146,83 Hz — o jogo muda a altura). Lembre de anotar autor/link em `../docs/CREDITS.md`.
 
 **Céu HDRI** (`assets/hdri/*.hdr`): até dois arquivos. O que tiver "por", "sol" ou "sunset" no
 nome é usado no fim da trilha; o outro, na tarde. Serve para os reflexos dos metais (qualidade
