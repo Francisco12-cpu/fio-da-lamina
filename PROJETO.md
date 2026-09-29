@@ -1,12 +1,14 @@
 # Fio da Lâmina — protótipo de combate 3D
 
 Demonstração técnica jogável de combate com espada em terceira pessoa, inspirada na
-sensação de combate de *Ghost of Tsushima* (sem copiar seus assets). Um único arquivo
-HTML, Three.js via CDN, sem build. Roda direto no navegador, PC ou celular.
+sensação de combate de *Ghost of Tsushima* (sem copiar seus assets). Three.js, build estático
+(Vite). Roda no navegador, PC ou celular.
 
-**Arquivo:** `fio-da-lamina.html`
-**Artifact publicado:** https://claude.ai/artifact/NccAKGcGM4jLJSPjGjGt2y
-**Ambiente de dev:** aqui no chat (o usuário optou por não usar Claude Code/projeto modular em disco — ver Fase 0 das decisões).
+**Projeto:** Vite + módulos ES em `src/` (a versão de arquivo único original está intacta em `legacy/index.html`).
+**Rodar:** `npm install` e `npm run dev`. **Publicar:** `npm run build` (pasta `dist/`, GitHub Pages) ou
+`npm run build:arquivo` (um HTML só em `dist-arquivo/`, abre direto do disco). Ver `RELATORIO.md`.
+**Artifact antigo (versão do chat):** https://claude.ai/artifact/NccAKGcGM4jLJSPjGjGt2y
+**Ambiente de dev:** Claude Code nesta pasta desde 2026-09-28 (antes: no chat).
 
 ---
 
@@ -47,42 +49,37 @@ decisões futuras:
 
 ---
 
-## Arquitetura do arquivo
+## Arquitetura (módulos em `src/`)
 
-Único HTML, mas internamente dividido em blocos claros (comentários `====` marcam cada
-um). Ordem no arquivo:
+Os blocos do arquivo único viraram módulos (divisão automática, ver `DECISOES.md`, Fase 1).
+Instâncias do topo (jogador, boneco, câmera, encontros) ficam no registro `G` (`core/time.js`).
 
 ```
-CONFIG (CFG)        → todos os números de ajuste (velocidades, tempos de combate, câmera, neblina)
-PATH_POINTS/CLEARING→ pontos de controle da trilha e da clareira de treino
-UTIL                → clamp/lerp/damp/noise/mulberry32/segSeg (colisão lâmina x cápsula)
-ATMOSFERA (SKY_GLSL)→ função skyColor() e fogCalc() compartilhadas entre céu, neblina e grama
-Terrain (classe)     → heightmap CPU (Float32Array) + textura RGBA (altura/trilha/densidade/patch) pra GPU
-RENDER               → renderer, scene, composer (bloom condicional)
-MUNDO                → céu, luz, terreno (shader custom on top de MeshLambertMaterial)
-GRAMA                → grassNear + grassMid, LOD contínuo por fade probabilístico (ver "Grama" abaixo)
-Rochas/Árvores       → geradas proceduralmente, colliders[] populado junto
-Cordilheiras         → duas camadas de silhueta (makeRidge)
-Pólen (motes)        → partículas aditivas
-EFEITOS              → Particles (sparks/splinters), Trail (rastro da lâmina)
-ÁUDIO (Sound)        → Web Audio 100% sintetizado, sem assets
-INPUT                → teclado/mouse/touch unificados, buffer de ação de 160ms (Input.press/take)
-Time (hitstop)       → freeze() e slow() para pausa de impacto e câmera lenta
-POSES DA ESPADA      → dados (não animação): POSE.guard/block/parry, MOVES[3] com keyframes de golpe
-Fighter (classe)     → corpo + máquina de estados de combate comum a jogador e inimigos;
-                       recebe um "intent" por quadro (quem controla não importa)
-Player (Fighter)     → intent vem do teclado/mouse/toque
-Enemy (Fighter)      → intent vem da IA (think); ETYPES normal/duelist; guarda com 3 marcadores
-Director             → só um inimigo ataca por vez, com intervalo mínimo entre ataques
-Combat.resolve       → um lugar só decide efeitos de parry/block/dodge/hit
-Cloak (classe)       → capa de pano (verlet) de cada Fighter
-Dummy (classe)       → boneco de treino (quintana giratória), IA simples por estado
-Encounters / Game    → 3 encontros, checkpoints, morte e retorno, tela final
-Training             → tutorial que avança sozinho conforme o jogador executa as ações
-CameraRig (classe)   → 3ª pessoa, colisão com colliders[], enquadramento de combate, shake
-UI                    → hint/stick/flash/vitalidade
-Quality/TIERS         → 4 níveis, auto-ajuste por FPS medido
-GAME LOOP             → update(dt) / render() separados (permite step() determinístico p/ testes)
+main.js              → carrega o personagem (await), cria mundo/lutadores, loop update()/render(), __game (testes)
+core/  config.js       CFG, sol, ATMO, trilha e clareira, URLP, IS_TOUCH
+       util.js         clamp/lerp/noise/rand (mulberry32)/segSeg
+       time.js         Time (hitstop, câmera lenta), clock, simT, Later (agendador), G (registro)
+       input.js        teclado/mouse/toque, buffer de ações (atk, defesa, esquiva, foco, mira)
+       quality.js      4 níveis, auto-ajuste por FPS (também: pano, sombra alternada, HDRI)
+render/ atmosphere.js  céu/neblina GLSL e tone mapping próprio · renderer.js: renderer, composer, raios, bloom
+world/ terrain.js · world.js (céu, sol, terreno, withRim/withBacklight) · grass.js (LOD contínuo + cone de visão)
+       props.js (pedras, árvores, lanternas, cordilheiras, pólen) · tod.js (hora do dia, ofuscamento, grão)
+       hdri.js (reflexos opcionais)
+fx/fx.js             faíscas, lascas, sangue, poeira, folhas, rastro da lâmina
+audio/ sound.js      síntese Web Audio · samples.js: sons gravados opcionais
+combat/ moves.js     POSE, keyframes, PLAYER_MOVES, ENEMY_LIB, WEAPONS
+        rules.js     dificuldade, maestria, janelas (aparar, aparo absoluto, esquiva perfeita)
+        combat.js    Combat.resolve (um lugar só decide o efeito de cada contato)
+        bind.js      espadas travadas · director.js: um ataca por vez · state.js: Report, Stats, Habits
+fighters/ fighter.js (estados, estabilidade, varredura da lâmina, trava) · player.js · enemy.js (ETYPES, IA)
+          cloak.js (capa verlet) · dummy.js (boneco de treino)
+anim/  controller.js  AnimationController (camadas full/upper, crossfade, movePhase)
+       procedural.js  boneco de cápsulas + equipamento comum (chapéu, armas, escudo, capa, quedas)
+       skinned.js     manequim com esqueleto (clipes + IK dos braços + katana na mão)
+       index.js       fábrica: modelo 3D se carregou, senão boneco
+game/  camera.js (terceira pessoa, grupo, cortes) · lockon.js (mira travada) · encounters.js (6 + duelo)
+       standoff.js (impasse) · game.js (morte, maestria, fim) · training.js · title.js (câmera do título)
+ui/    ui.js (dicas, HUD, tags, trava, maestria) · glyphs.js (desenho dos botões) · pause.js · panel.js
 ```
 
 ### Por que virou um shader custom em cima de `MeshLambertMaterial`
@@ -145,7 +142,7 @@ qualidade "baixa" sem derrubar o FPS, ou se vale adicionar um nível intermediá
   simulação (`simT`) é diferente do `dt` real (`clock.elapsed`), então UI e câmera-shake
   usam tempo real e a física/animação usa tempo de jogo.
 
-### Testes automatizados (Playwright headless)
+### Testes automatizados (histórico: como era no chat)
 
 Durante o desenvolvimento, cada mudança visual/de combate foi validada com Chromium
 headless (`swiftshader`) tirando screenshots em pontos determinísticos da simulação. O
@@ -326,10 +323,33 @@ Respostas do dono às sugestões:
   os golpes. Ex.: uma técnica rápida, que vence quase sempre quando os dois atacam juntos mas tira
   pouca estabilidade, e uma pesada, com o oposto. Golpes de cima e de lado se comportam diferente
   pela geometria da lâmina.
-- Golpe em cadeia após golpe decisivo; vento guia apontando o próximo encontro; aviso de ataque
-  vindo de fora da tela; posturas no estilo do Ghost.
+- Posturas no estilo do Ghost; golpe em cadeia após golpe decisivo; vento guia apontando o
+  próximo encontro; aviso de ataque vindo de fora da tela.
+- **Criação/troca de modelos 3D** (sessão própria, `PROMPT-CRIAR-MODELOS.md`): corpo com quimono e
+  hakama no esqueleto da Quaternius (mesmos nomes de ossos → as animações e o IK continuam valendo);
+  clipes próprios de andar em guarda, correr, esquivas laterais e golpes a duas mãos (hoje as pernas
+  vêm de clipes genéricos e os braços são IK). Universal Animation Library 1 (locomoção) resolveria parte.
+- Hakama/roupa com física leve (como a capa) para esconder o manequim.
+- Nível de qualidade intermediário entre "baixa" e "média" (pendência antiga da grama no celular).
+- Bot que lê o golpe com atraso de reação humano, para calibrar o duelo mais perto de 50%.
 
----
+## Sessão no Claude Code (2026-09-28) — o que mudou
+
+Detalhes, números e alternativas descartadas em `DECISOES.md`; plano em `PLANO.md`; resumo em `RELATORIO.md`.
+- **Projeto Vite** com módulos, testes automáticos (lógica, bots, telas, poses, desempenho, build).
+- **Câmera**: 25% mais longe e mais alta; grama baixa e se abre no cone câmera→personagem; mira travada
+  (Q / botão do meio / toque / botão "mira", troca arrastando); enquadra o grupo inteiro.
+- **Combate**: sem estabilidade qualquer golpe de lâmina mata (os dois lados); janela de aparar por inimigo
+  e por golpe (recruta 190 ms … duelista 90 ms); maestria (1 de 2 melhorias por encontro); foco (esquiva
+  perfeita → pingo de tinta → respirar); ataques simultâneos (acerta primeiro quem chegar; golpes no mesmo
+  instante travam as espadas: apertar o golpe); estocadas com aparo absoluto (50 ms); lanceiro, escudeiro e
+  esquivo; 6 encontros + duelo com grupos até 3; empurrão na direção do golpe; ferido respira pesado;
+  morte com joelhos, queda, espada e chapéu caindo; câmera lenta e imagem sem cor na morte do jogador.
+- **Interface**: título cinematográfico com dificuldade; menu de pausa; dicas com o desenho do botão;
+  barras só em combate; vitalidade em traço de pincel; maestria em cartões de papel.
+- **Personagem 3D**: manequim CC0 da Quaternius com clipes + IK; katana presa à mão; boneco de reserva.
+- **Assets opcionais**: sons gravados e HDRI entram sozinhos se forem colocados em `assets/`.
+- **Desempenho**: medido na GPU real; ~31 fps no nível "baixa" com CPU 4× mais lenta (luta em grupo).
 
 ## Estado atual (o que já funciona)
 
@@ -366,15 +386,15 @@ Respostas do dono às sugestões:
   sobe devagar e com cautela.
 - Controles PC e mobile (joystick + botões de toque) funcionando lado a lado no mesmo código.
 
-## Ainda não implementado
+## Ainda não implementado / pendente
 
-1. Substituir o boneco provisório pelo personagem real (Mixamo) — **bloqueado
-   aguardando o usuário enviar os arquivos**. As poses de espada viram offsets sobre o
-   osso da mão; `Fighter` não muda.
-2. Polimento final (lista de itens no documento original, seção 34), com base no
-   feedback de quem jogar os três encontros.
+1. Confirmar no celular do dono: FPS (a GPU do celular não é simulada), toques (mira por toque, foco,
+   arrastar para trocar de alvo), leitura das dicas com desenho do botão.
+2. Roupas de verdade para o manequim e animações próprias de katana (ver "Ideias futuras").
+3. Sons gravados e HDRI: o código está pronto; faltam os arquivos (`assets/README.md`).
+4. Polimento com base no feedback de quem jogar os seis encontros e o duelo.
 
-## Lista do Mixamo pendente (repetida aqui para não se perder)
+## Lista do Mixamo (histórico; o projeto usa a Universal Animation Library 2 da Quaternius)
 
 Personagem "Y Bot" (ou humano de proporção normal, T-pose, FBX Binary, com skin) +
 animações "Without Skin", 30fps, "In Place" quando disponível, pacote de espada de duas
@@ -401,13 +421,19 @@ mãos: idle, walk, run, 3 ataques diferentes, blocking + hit-block, hit reaction
   desligado, o próprio céu desenha o halo do sol (`uGlow`); contagem de grama da
   "baixa" subiu de 24k para 28k. Pendente: confirmar no celular do usuário.
 
-## Como testar uma mudança rapidamente (headless, sem depender do celular)
+## Como testar (headless, sem depender do celular)
+
+Tudo em Node + Playwright (Chromium já instalado na máquina, ver `tests/lib/harness.mjs`):
 
 ```bash
-# server local servindo o build com imports apontando pro three local
-python3 -m http.server 8765 &
-# script Playwright chama window.__game.step(n) em pontos determinísticos
-# e tira screenshot — ver conversa/histórico de sessão para os scripts usados
+npm run test:logica      # 23 verificações: mira, estabilidade letal, estocada, foco, trava, maestria, morte, pausa
+npm run test:bots        # lutas por bots em todos os encontros (só ataca, só defende, humano ±120 ms, trava, esquiva)
+npm run test:telas       # screenshots das cenas fixas (clareira, trilha, duelo, grupo, mira, inimigos novos, trava, morte, título, pausa)
+node tests/diff.mjs A B  # compara duas pastas de screenshots pixel a pixel
+node tests/screens.mjs --touch --q 1 --dir tests/screens/x   # mesma coisa em tela de celular
+node tests/pose.mjs [--nocloak] [--boneco]                    # poses do personagem de perto
+npm run test:desempenho  # FPS por nível na GPU real, CPU 1×/4× (Android médio aprox.)
+node tests/build.mjs     # os dois builds de produção abrem e carregam o modelo
 ```
-
-Isso evita pedir pro usuário testar no celular a cada ajuste fino de shader/timing.
+`?test` expõe `window.__game` (loop parado; `step(n)`), `?noaudio`, `?q=0..3`, `?boneco` (sem modelo 3D),
+`?perf` (mede simulação/desenho por quadro).

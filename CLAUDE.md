@@ -38,15 +38,23 @@ Mensagens de commit em português.
 
 O jogo expõe `window.__game` quando aberto com `?test`: o loop não roda sozinho e
 `__game.step(n, dt)` / `__game.update(dt)` / `__game.render()` avançam a simulação de forma
-determinística. Use Playwright (Chromium headless com `--use-angle=swiftshader`) para:
-1. Screenshots de posições fixas (clareira, meio da trilha, duelo ao pôr do sol, luta em grupo)
-   antes e depois de cada mudança visual. Guarde em `tests/screens/` e compare.
-2. Lutas simuladas por bots (ver `tools/sim_bots_referencia.py`): "só ataca", "só defende",
-   "habilidoso" e "humano com erro de ±120 ms". Metas atuais: só atacar e só defender perdem;
-   o humano vence o recruta sempre, a dupla ~75%, o paciente ~50%, o duelista ~75%;
-   nenhuma vitória sem pelo menos um aparo. Rode depois de qualquer mudança de combate.
-Cuidado: no headless, `requestPointerLock` trava screenshots (faça stub) e áudio pesado
-atrapalha em máquina fraca (use `?noaudio` nos testes).
+determinística. Os testes são em Node + Playwright (`tests/`, Chromium já instalado na máquina,
+ver `tests/lib/harness.mjs`; os scripts Python em `tools/` são só referência histórica):
+1. `npm run test:telas` / `node tests/screens.mjs --dir tests/screens/<pasta>` (e `--touch --q 1` para
+   celular): cenas fixas (clareira, trilha, duelo, grupo, mira, inimigos novos, trava, morte, título,
+   pausa). Compare com `node tests/diff.mjs A B` antes e depois de cada mudança visual.
+2. `npm run test:bots`: lutas por bots em todos os encontros — "só ataca", "só defende", "humano com
+   erro de ±120 ms" (com as melhorias que teria até ali), "binder" (provoca a trava) e "dodger"
+   (esquiva perfeita + foco). Metas atuais: só atacar e só defender perdem; o humano vence os
+   primeiros encontros quase sempre e o duelo ~50–60%; nenhuma vitória sem aparo ou trava vencida.
+   Rode depois de qualquer mudança de combate. `--boneco` roda com o boneco de cápsulas: o
+   resultado tem que ser idêntico ao do modelo 3D (o visual não pode mudar o combate).
+3. `npm run test:logica`: verificações diretas das regras (mira, estabilidade letal, estocada, foco,
+   trava, maestria, morte, pausa).
+4. `npm run test:desempenho`: FPS por nível na GPU real (ANGLE/D3D11) com CPU 1× e 4×.
+Cuidado: no headless, `requestPointerLock` trava screenshots (o harness faz stub) e áudio pesado
+atrapalha em máquina fraca (use `?noaudio` nos testes). Nada de `setTimeout` na lógica do jogo:
+use `Later.after()` (roda no tempo do loop; senão os bots deixam de ser determinísticos).
 
 ## Performance
 
