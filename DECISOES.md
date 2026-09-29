@@ -167,3 +167,15 @@ Resultado dos bots (6 lutas por combinação; duelo com 24):
 - **Reserva**: se o arquivo não carregar (ou com `?boneco` na URL), o boneco de cápsulas assume.
 - Carregamento com progresso na tela "Preparando o campo… N%" (top-level await no `main.js`;
   build com alvo es2022).
+
+## 2026-09-28 — Fase 6: assets opcionais
+
+- Não havia arquivos em `assets/sounds/` nem `assets/hdri/`. O código ficou pronto e foi testado com
+  arquivos gerados na hora (e apagados): `tests/samples.mjs` carrega e toca um .wav; um .hdr mínimo
+  vira `scene.environment`. Sem arquivos, nada muda.
+- **Sons**: `import.meta.glob` descobre os arquivos no build; cada som gravado substitui o
+  sintetizado correspondente, som por som (o que faltar continua sintetizado). Descartado:
+  manifesto manual (mais um arquivo para o dono manter).
+- **HDRI**: só reflexos dos metais (MeshStandardMaterial) via PMREM; o céu, a neblina e a luz
+  continuam os do shader (a transição tarde → pôr do sol é o coração do visual e já funciona).
+  Descartado: usar o HDRI como fundo (quebraria a neblina que funde com o céu).

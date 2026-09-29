@@ -1,3 +1,4 @@
+import { Hdri } from '../world/hdri.js';
 import { IS_TOUCH, URLP } from './config.js';
 import { clamp } from './util.js';
 import { bloodFx, dustFx, leafFx, sparks, splinters } from '../fx/fx.js';
@@ -35,6 +36,7 @@ export const Quality = {
       if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; }
     }
     motes.geometry.setDrawRange(0, T.motes);
+    Hdri.enabled = this.tier >= 2; // reflexos do HDRI só em média/alta
     [motes.material, sparks.mat, splinters.mat, bloodFx.mat, dustFx.mat, leafFx.mat].forEach((m) => (m.uniforms.uPx.value = dpr));
   },
   frame(dt) {

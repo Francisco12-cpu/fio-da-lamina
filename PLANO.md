@@ -59,8 +59,8 @@ Pronto: screenshots de cada tela em PC e celular (retrato bloqueado, paisagem).
 - [x] Fallback automático para o boneco procedural se o arquivo não carregar.
 Pronto: screenshots lado a lado, bots dentro das metas, FPS medido.
 
-### Fase 6 — assets opcionais
-- [ ] Carregador de sons gravados com reserva sintetizada; carregador de HDRI com reserva no céu atual.
+### Fase 6 — assets opcionais ✅
+- [x] Carregador de sons gravados com reserva sintetizada; carregador de HDRI com reserva no céu atual.
 (Não há arquivos em `assets/sounds` nem `assets/hdri`: fica o código pronto e testado com a reserva.)
 
 ### Fase 7 — performance e celular

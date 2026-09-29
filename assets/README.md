@@ -63,3 +63,21 @@ https://freesound.org — buscar: "katana clash", "sword parry", "sword unsheath
 
 https://polyhaven.com/hdris — categoria "sunrise-sunset", resolução 2K, formato .hdr.
 Um HDRI de tarde e um de pôr do sol em campo aberto.
+
+## Como o jogo usa o que estiver aqui (código pronto, sessão 2026-09-28)
+
+**Personagem:** `assets/characters/personagem.glb` é gerado de
+`assets/animations/Universal Animation Library 2[Standard].zip` → extraia
+`Unreal-Godot/UAL2_Standard.glb` para `assets/characters/ual2/` e rode
+`node tools/optimize_character.mjs`. Para trocar o personagem por outro do mesmo esqueleto
+(Universal Base Characters da Quaternius), basta gerar um GLB com os mesmos nomes de ossos.
+
+**Sons gravados** (`assets/sounds/`, .ogg/.mp3/.wav/.m4a): o nome do arquivo é o nome do som;
+variações com `-1`, `-2`… são sorteadas. Qualquer um que falte continua sintetizado.
+`aparar`, `defesa`, `defesa-forte`, `golpe-ar`, `corte`, `sacar`, `guardar`, `passo-grama`,
+`passo-terra`, `vento` (laço), `cigarras` (laço), `grilos` (laço), `taiko`, `koto` (uma nota
+em Ré, 146,83 Hz — o jogo muda a altura). Lembre de anotar autor/link em `CREDITS.md`.
+
+**Céu HDRI** (`assets/hdri/*.hdr`): até dois arquivos. O que tiver "por", "sol" ou "sunset" no
+nome é usado no fim da trilha; o outro, na tarde. Serve para os reflexos dos metais (qualidade
+média e alta). O céu desenhado continua o mesmo.

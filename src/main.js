@@ -48,6 +48,7 @@ import { Standoff } from './game/standoff.js';
 import { Training } from './game/training.js';
 import { Lock } from './game/lockon.js';
 import { loadCharacter } from './anim/skinned.js';
+import { Hdri } from './world/hdri.js';
 import { Title } from './game/title.js';
 import { Pause, CREDITS_HTML, controlsHTML } from './ui/pause.js';
 import { DIFFS } from './combat/rules.js';
@@ -70,6 +71,7 @@ if (!URLP.has('boneco')) {
   try { await loadCharacter((k) => { loadingEl.textContent = `Preparando o campo… ${Math.round(k * 100)}%`; }); }
   catch (e) { console.warn('modelo 3D indisponível, usando o boneco', e); }
 }
+Hdri.load().catch((e) => console.warn('HDRI', e));
 const player = (G.player = new Player(new THREE.Vector3(CLEARING.x, 0, CLEARING.z + 5)));
 const dummy = (G.dummy = new Dummy(DUMMY_POS.x, DUMMY_POS.z));
 G.Encounters = Encounters; G.Game = Game; G.Standoff = Standoff; G.Training = Training;
@@ -223,6 +225,7 @@ function update(realDt) {
   sunLight.position.set(sx + SUN.x * 90, player.pos.y + SUN.y * 90, sz + SUN.z * 90);
 
   TOD.update(realDt, player);
+  Hdri.update(Math.max(0, TOD.k));
   Glare.update(realDt);
   const fighting = Encounters.enemies.some((e) => e.alive && e.aware && e.pos.distanceTo(player.pos) < 12);
   // barras e vitalidade só em combate (luta, trava, impasse ou treino com o boneco atacando)
@@ -237,5 +240,5 @@ if (!URLP.has('test')) Panel.init();
 if (!TEST) Title.begin(); else Title.active = false;
 if (!TEST) requestAnimationFrame((n) => { clock.last = n; frame(n); });
 document.getElementById('loading').classList.add('gone');
-window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Title, Pause, grass: [grassNear, grassMid], scene, Combat, Bind, Mastery, Rules, get simT() { return simT; },
+window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Title, Pause, Hdri, grass: [grassNear, grassMid], scene, Combat, Bind, Mastery, Rules, get simT() { return simT; },
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) update(dt); render(); } };

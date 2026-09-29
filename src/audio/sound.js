@@ -1,3 +1,4 @@
+import { Samples } from './samples.js';
 import { URLP } from '../core/config.js';
 import { damp } from '../core/util.js';
 
@@ -20,7 +21,8 @@ export const Sound = {
     for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < irLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 3.4); }
     this.rev = ctx.createConvolver(); this.rev.buffer = ir;
     const rg = ctx.createGain(); rg.gain.value = 0.32; this.rev.connect(rg); rg.connect(this.out);
-    this.wind();
+    // sons gravados opcionais: o vento sintetizado só entra se não houver 'vento'
+    Samples.load(ctx).then(() => { if (!Samples.play(ctx, this.out, 'vento', { vol: 0.5, loop: true })) this.wind(); });
   },
   now() { return this.ctx.currentTime; },
   bus(send = 0) {
@@ -50,12 +52,14 @@ export const Sound = {
   },
   swoosh(p = 1) {
     if (!this.ctx) return; const t = this.now();
+    if (Samples.play(this.ctx, this.bus(0.08), 'golpe-ar', { vol: 0.7 * p })) return;
     const n = this.src(t, 0.25), bp = this.filt('bandpass', 500, 1.3);
     bp.frequency.setValueAtTime(500, t); bp.frequency.exponentialRampToValueAtTime(2600, t + 0.07); bp.frequency.exponentialRampToValueAtTime(700, t + 0.22);
     n.connect(bp); this.env(bp, t, 0.035, 0.34 * p, 0.2).connect(this.bus(0.08));
   },
   clang(kind) {
     if (!this.ctx) return; const t = this.now();
+    if (Samples.play(this.ctx, this.bus(kind === 'parry' ? 0.6 : 0.2), kind === 'parry' ? 'aparar' : kind === 'heavy' ? (Samples.has('defesa-forte') ? 'defesa-forte' : 'defesa') : 'defesa', { vol: kind === 'parry' ? 1 : 0.8 })) return;
     const parry = kind === 'parry', heavy = kind === 'heavy', pow = parry ? 1 : heavy ? 0.75 : 0.5, ring = parry ? 1.7 : heavy ? 0.8 : 0.5;
     const out = this.bus(parry ? 0.6 : 0.2);
     [523, 1247, 1987, 2890, 3960, 5210].forEach((f, i) => {
@@ -87,14 +91,16 @@ export const Sound = {
     this.env(lp, t, 0.003, 0.45, 0.2).connect(out);
   },
   draw() {
-    if (!this.ctx) return; const t = this.now(), out = this.bus(0.3);
+    if (!this.ctx) return;
+    if (Samples.play(this.ctx, this.bus(0.3), 'sacar', { vol: 0.8 })) return; const t = this.now(), out = this.bus(0.3);
     const n = this.src(t, 0.4), bp = this.filt('bandpass', 3000, 3);
     bp.frequency.setValueAtTime(2500, t); bp.frequency.exponentialRampToValueAtTime(7500, t + 0.3); n.connect(bp);
     this.env(bp, t, 0.04, 0.14, 0.3).connect(out);
     const o = this.osc('sine', 4200, t + 0.25, 0.7); this.env(o, t + 0.25, 0.005, 0.03, 0.6).connect(out);
   },
   sheath() {
-    if (!this.ctx) return; const t = this.now(), out = this.bus(0.1);
+    if (!this.ctx) return;
+    if (Samples.play(this.ctx, this.bus(0.1), 'guardar', { vol: 0.8 })) return; const t = this.now(), out = this.bus(0.1);
     const n = this.src(t, 0.35), bp = this.filt('bandpass', 2200, 2);
     bp.frequency.setValueAtTime(2400, t); bp.frequency.exponentialRampToValueAtTime(1200, t + 0.28); n.connect(bp);
     this.env(bp, t, 0.05, 0.08, 0.25).connect(out);
@@ -136,6 +142,7 @@ export const Sound = {
   },
   slash() {
     if (!this.ctx) return; const t = this.now(), out = this.bus(0.2);
+    if (Samples.play(this.ctx, out, 'corte', { vol: 0.9 })) return;
     const n = this.src(t, 0.12), hp = this.filt('highpass', 1800); n.connect(hp);
     this.env(hp, t, 0.002, 0.3, 0.1).connect(out);
     const o = this.osc('sine', 110, t, 0.3); o.frequency.exponentialRampToValueAtTime(40, t + 0.25);
@@ -190,12 +197,15 @@ export const Sound = {
   },
   pluck(f, vol = 0.1, delay = 0) {
     if (!this.ctx) return; const t = this.now() + delay;
+    // gravação 'koto' afinada em Ré (146,83 Hz): a nota vem da velocidade de reprodução
+    if (Samples.play(this.ctx, this.bus(0.6), 'koto', { vol: vol * 4, rate: f / 146.83, when: delay })) return;
     const src = this.ctx.createBufferSource(); src.buffer = this.pluckBuf(f);
     const lp = this.filt('lowpass', 2600, 0.5), g = this.ctx.createGain(); g.gain.value = vol;
     src.connect(lp); lp.connect(g); g.connect(this.bus(0.6)); src.start(t);
   },
   taiko(vol = 0.5, rim = false) {
     if (!this.ctx) return; const t = this.now(), out = this.bus(0.25);
+    if (!rim && Samples.play(this.ctx, out, 'taiko', { vol: vol * 1.4 })) return;
     if (rim) { const n = this.src(t, 0.06), bp = this.filt('bandpass', 1900, 3); n.connect(bp); this.env(bp, t, 0.001, vol * 0.4, 0.05).connect(out); return; }
     const o = this.osc('sine', 78, t, 0.5); o.frequency.exponentialRampToValueAtTime(44, t + 0.3);
     this.env(o, t, 0.004, vol, 0.42).connect(out);
@@ -213,16 +223,23 @@ export const Sound = {
     const s1 = ctx.createBufferSource(); s1.buffer = this.noise; s1.loop = true;
     const bp = this.filt('bandpass', 5400, 7); this.cicadaG = ctx.createGain(); this.cicadaG.gain.value = 0;
     const trem = ctx.createGain(); trem.gain.value = 0.5; const lfo = ctx.createOscillator(); lfo.frequency.value = 38; const lg = ctx.createGain(); lg.gain.value = 0.5;
-    lfo.connect(lg); lg.connect(trem.gain); s1.connect(bp); bp.connect(trem); trem.connect(this.cicadaG); this.cicadaG.connect(this.out);
-    s1.start(); lfo.start();
+    this.cicadaG.connect(this.out);
+    // gravação 'cigarras' (se houver) no lugar da síntese; o volume segue a hora do dia do mesmo jeito
+    if (!Samples.play(ctx, this.cicadaG, 'cigarras', { vol: 2.5, loop: true })) {
+      lfo.connect(lg); lg.connect(trem.gain); s1.connect(bp); bp.connect(trem); trem.connect(this.cicadaG);
+      s1.start(); lfo.start();
+    }
     // grilos: tom agudo em pulsos
     const o = ctx.createOscillator(); o.frequency.value = 4700; this.cricketG = ctx.createGain(); this.cricketG.gain.value = 0;
     const pulse = ctx.createGain(); pulse.gain.value = 0; const l1 = ctx.createOscillator(); l1.type = 'square'; l1.frequency.value = 22; const l1g = ctx.createGain(); l1g.gain.value = 0.5;
     const l2 = ctx.createOscillator(); l2.type = 'square'; l2.frequency.value = 0.7; const l2g = ctx.createGain(); l2g.gain.value = 0.5;
     const gate = ctx.createGain(); gate.gain.value = 0.5;
     l1.connect(l1g); l1g.connect(pulse.gain); l2.connect(l2g); l2g.connect(gate.gain);
-    o.connect(pulse); pulse.connect(gate); gate.connect(this.cricketG); this.cricketG.connect(this.out);
-    o.start(); l1.start(); l2.start();
+    this.cricketG.connect(this.out);
+    if (!Samples.play(ctx, this.cricketG, 'grilos', { vol: 6, loop: true })) {
+      o.connect(pulse); pulse.connect(gate); gate.connect(this.cricketG);
+      o.start(); l1.start(); l2.start();
+    }
   },
   music(dt, mode, tod) {
     if (!this.ctx) return;
@@ -253,7 +270,8 @@ export const Sound = {
     if (mode === 'standoff') { this.heartT -= dt; if (this.heartT <= 0) { this.heartT = 1.05; this.heart(0.32); } }
   },
   step(onPath, run) {
-    if (!this.ctx) return; const t = this.now();
+    if (!this.ctx) return;
+    if (Samples.play(this.ctx, this.bus(0), onPath ? 'passo-terra' : 'passo-grama', { vol: run ? 0.6 : 0.35 })) return; const t = this.now();
     const n = this.src(t, 0.12), bp = this.filt('bandpass', onPath ? 750 : 2300, 0.8); n.connect(bp);
     this.env(bp, t, 0.006, run ? 0.1 : 0.055, 0.08).connect(this.bus(0));
   },
