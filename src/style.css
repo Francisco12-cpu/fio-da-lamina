@@ -176,7 +176,6 @@ body.dying canvas#c { filter: saturate(0.1) contrast(1.06) brightness(0.88); tra
 .crow .ck { text-align: right; }
 .crow .ct { color: var(--ink-dim); }
 #creditsBox .list p { margin: 0.5em 0; color: var(--ink-dim); } #creditsBox .list b { color: var(--ink); }
-#panel { z-index: 7; }
 #tags { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .tag { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; transform: translate(-50%, -100%); transition: opacity 0.3s; }
 .tag .bar { position: relative; width: 70px; height: 5px; background: rgba(12, 8, 4, 0.6); box-shadow: 0 0 6px rgba(0, 0, 0, 0.55); border-radius: 1px; overflow: hidden; }
@@ -212,7 +211,7 @@ body.dying canvas#c { filter: saturate(0.1) contrast(1.06) brightness(0.88); tra
   font-family: 'Shippori Mincho', Georgia, serif; font-size: clamp(18px, 1.9vw, 23px); padding: 0 0 0.12em; cursor: pointer; }
 #panel { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px));
   width: min(330px, 92vw); max-height: 86vh; overflow: auto; background: rgba(16, 11, 6, 0.9); color: var(--ink);
-  border: 1px solid rgba(242, 231, 209, 0.18); border-radius: 10px; padding: 14px 16px; z-index: 5;
+  border: 1px solid rgba(242, 231, 209, 0.18); border-radius: 10px; padding: 14px 16px; z-index: 7;
   font: 13px/1.4 'Zen Kaku Gothic New', system-ui, sans-serif; -webkit-user-select: text; user-select: text; }
 #panel[hidden] { display: none; }
 #panel h3 { margin: 0 0 10px; font: 700 17px 'Shippori Mincho', Georgia, serif; }

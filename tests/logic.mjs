@@ -109,8 +109,21 @@ const TESTS = {
     out.push(['clicar no contador de FPS não abre os ajustes', !g.Panel.open]);
     dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP', bubbles: true }));
     out.push(['tecla P não abre os ajustes', !g.Panel.open]);
+    // Panel.init() (liga os cliques dos botões) só roda fora do modo `?test`; chama à mão aqui
+    // para testar o mesmo caminho de um jogo de verdade.
+    if (!g.Panel.inited) { g.Panel.init(); g.Panel.inited = true; }
     g.Pause.open(); g.Pause.actions.settings();
     out.push(['Pausa → Ajustes abre o painel', g.Panel.open]);
+    // o painel precisa estar de fato clicável por cima da pausa (não só visualmente à frente):
+    // um botão de qualidade dentro do painel tem que ser o elemento que recebe o clique nas
+    // próprias coordenadas, não o fundo da pausa (bug real: duas regras `#panel` com z-index
+    // diferente, a de baixo no arquivo vencia e a pausa ficava por cima capturando o clique)
+    const btn = document.querySelector('#panel [data-q="1"]');
+    const r = btn.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    out.push(['botão de qualidade do painel recebe o clique (não a pausa por cima)', btn.contains(hit) || hit === btn]);
+    btn.click();
+    out.push(['clicar realmente troca a qualidade', g.Quality.tier === 1 && !g.Quality.auto]);
     g.Panel.toggle(false); g.Pause.close(false);
     return out;
   },

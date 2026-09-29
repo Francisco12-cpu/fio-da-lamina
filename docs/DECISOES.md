@@ -226,3 +226,20 @@ Compressão: o personagem vai em GLB com Meshopt (1,8 MB). Não há texturas (KT
   fica na raiz (é lido automaticamente pelo Claude Code só nesse lugar). Criado `README.md` na
   raiz (não existia nenhum) com o link do jogo publicado e um mapa da documentação — o repositório
   é público agora, então isso é a porta de entrada de quem visitar no GitHub.
+
+## 2026-09-28 — Correção: painel de ajustes não recebia clique dentro da pausa
+
+- **Bug relatado pelo dono**: abrir Ajustes pela pausa mostrava o painel, mas nada nele respondia
+  ao toque/clique.
+- **Causa**: duas regras `#panel` no CSS definindo `z-index` diferente (7 e 5); como CSS resolve
+  por propriedade e a última no arquivo vence em empate de especificidade, o painel ficava com
+  z-index 5 — abaixo da pausa (z-index 6, tela inteira), que interceptava o clique silenciosamente
+  (o handler da pausa só age em botões com `data-a`; em outro alvo, não faz nada, por isso parecia
+  travado sem erro nenhum).
+- **Correção**: removida a regra solta `#panel { z-index: 7; }`; o valor certo (7) foi movido para
+  dentro da regra principal do `#panel`, num lugar só, para não repetir esse tipo de conflito.
+- **Teste novo** (`tests/logic.mjs`, `ajustesSoPelaPausa`): usa `document.elementFromPoint()` nas
+  coordenadas de um botão do painel para confirmar que ele — não o fundo da pausa — é quem recebe
+  o clique; e clica de verdade um botão de qualidade conferindo que `Quality.tier` muda. Prova de
+  que o teste pega o bug: rodei contra o CSS antigo antes de corrigir e ele falhou exatamente
+  nesses dois pontos.
