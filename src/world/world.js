@@ -83,6 +83,7 @@ export let skyMat;
   const sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 20), mat);
   sky.renderOrder = -1000; sky.frustumCulled = false;
   sky.onBeforeRender = () => sky.position.copy(camera.position);
+  sky.userData.dynamic = true;
   scene.add(sky);
 }
 

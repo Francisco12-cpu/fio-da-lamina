@@ -303,7 +303,7 @@ export class Fighter {
   sampleBlade(t0, t1, targets, now) {
     const m = this.move, a0 = m.w - 0.015, a1 = m.w + m.a + 0.05;
     if (t1 < a0 || t0 > a1) { this.hasPrevTip = false; return; }
-    this.root.updateMatrixWorld(true);
+    this.root.updateWorldMatrix(false, false); // só a matriz do corpo (a lâmina é calculada a partir dela)
     if (m.grab || m.bash) {
       // agarrão e empurrão de escudo: alcance do corpo, não da lâmina
       if (t1 >= m.w && t0 <= m.w + m.a) for (const tg of targets) {

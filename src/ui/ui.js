@@ -110,10 +110,11 @@ export const UI = {
     this.lockEl.classList.toggle('on', lv);
     if (IS_TOUCH) this.bLock.classList.toggle('active', !!lt);
     for (const e of G.Encounters.enemies) {
-      const show = e.aware && e.alive && Input.enabled;
-      _v.set(e.pos.x, e.pos.y + 2.15, e.pos.z).project(camera);
-      const vis = show && _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1 && camera.position.distanceTo(e.pos) < 28;
-      e.tag.style.opacity = vis ? 1 : 0;
+      const show = e.aware && e.alive && Input.enabled && camera.position.distanceToSquared(e.pos) < 28 * 28;
+      let vis = false;
+      if (show) { _v.set(e.pos.x, e.pos.y + 2.15, e.pos.z).project(camera); vis = _v.z < 1 && Math.abs(_v.x) < 1.1 && Math.abs(_v.y) < 1.1; }
+      // o DOM só é tocado quando algo muda (tocar o estilo todo quadro custa caro no celular)
+      if (e.tagVis !== vis) { e.tagVis = vis; e.tag.style.opacity = vis ? 1 : 0; }
       if (!vis) continue;
       e.tag.style.left = ((_v.x * 0.5 + 0.5) * innerWidth).toFixed(1) + 'px';
       e.tag.style.top = ((-_v.y * 0.5 + 0.5) * innerHeight).toFixed(1) + 'px';

@@ -1,3 +1,4 @@
+import { Cloak } from '../fighters/cloak.js';
 import { Hdri } from '../world/hdri.js';
 import { IS_TOUCH, URLP } from './config.js';
 import { clamp } from './util.js';
@@ -36,6 +37,7 @@ export const Quality = {
       if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; }
     }
     motes.geometry.setDrawRange(0, T.motes);
+    Cloak.iters = this.tier >= 2 ? 4 : 2; Cloak.half = this.tier <= 1; // pano mais barato no celular
     Hdri.enabled = this.tier >= 2; // reflexos do HDRI só em média/alta
     [motes.material, sparks.mat, splinters.mat, bloodFx.mat, dustFx.mat, leafFx.mat].forEach((m) => (m.uniforms.uPx.value = dpr));
   },

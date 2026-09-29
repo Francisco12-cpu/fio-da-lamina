@@ -179,3 +179,37 @@ Resultado dos bots (6 lutas por combinação; duelo com 24):
 - **HDRI**: só reflexos dos metais (MeshStandardMaterial) via PMREM; o céu, a neblina e a luz
   continuam os do shader (a transição tarde → pôr do sol é o coração do visual e já funciona).
   Descartado: usar o HDRI como fundo (quebraria a neblina que funde com o céu).
+
+## 2026-09-28 — Fase 7: desempenho
+
+Medição (`tests/perf.mjs`): GPU real da máquina (Intel UHD integrada, via ANGLE/D3D11), tela de
+celular (800×370 CSS, densidade 2,625, toque), luta em grupo (3 inimigos), 8 s por medida.
+"CPU 4×" = Chromium com a CPU limitada 4× (aproximação de um Android intermediário; a GPU do
+celular não é simulada — por isso a meta final precisa ser confirmada no aparelho do dono).
+
+Causas encontradas e corrigidas (em ordem de ganho):
+1. **Título invisível custando caro**: os botões de dificuldade têm `backdrop-filter` e o título
+   só ficava com opacidade 0 — o navegador continuava refazendo o desfoque a cada quadro. Agora
+   ele sai de cena (`visibility: hidden`). Sozinho: 39 → ~50 fps (boneco, CPU 4×). Marcador da mira
+   também para de girar quando invisível.
+2. **Inimigos distantes "dormem"**: parados, sem lutar e a mais de 40 m, atualizam a cada 20
+   quadros e seus ossos não são recalculados no desenho; além de 110 m não são desenhados.
+   Um inimigo atento ou no meio de uma ação nunca dorme. (Os 14 inimigos da trilha eram ~85% da
+   simulação.)
+3. **Matrizes**: ajustes nos ossos atualizam só o próprio osso (antes recalculavam a mão e os
+   dedos a cada rotação); o mundo parado (pedras, árvores, terreno, grama) não recalcula matriz.
+4. **Celular (baixa/mínima)**: sombra do sol refeita a cada 2 quadros; capa com 2 iterações e a
+   30 Hz; peças finas (espada, bainha) sem sombra.
+Descartado: juntar pedras/árvores numa malha só (ganho dentro do ruído e mais triângulos na GPU).
+
+Resultado (luta em grupo, fps médios):
+| nível | CPU 1× | CPU 4× | CPU 6× |
+|---|---|---|---|
+| mínima | ~100 | ~31 | ~17 |
+| baixa | ~70 | ~31 | ~16 |
+| média | ~56 | ~23 | ~12 |
+| alta | ~33 | ~20 | ~12 |
+Referência do legado (luta em dupla, CPU 4×): ~53 fps. Projeto novo na mesma luta, com boneco:
+~50–57 fps; com o modelo 3D: ~35–38 fps (o esqueleto + IK de 3–4 personagens custa ~6 ms na CPU
+lenta). A qualidade automática do celular continua descendo de nível abaixo de 26 fps.
+Compressão: o personagem vai em GLB com Meshopt (1,8 MB). Não há texturas (KTX2 não se aplica).

@@ -107,6 +107,8 @@ export class ProceduralController extends AnimationController {
     f.glint = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), gm);
     f.glint.position.set(0, 0.03, -(f.weapon.tip - 0.03)); f.glint.scale.setScalar(0.001); f.sword.add(f.glint);
     f.sword.visible = false;
+    // peças finas não projetam sombra (quase invisível e custa uma chamada de desenho cada)
+    for (const g of [f.sword, f.scab]) g.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     scene.add(f.root);
     f.blob = new THREE.Mesh(BLOB_GEO, new THREE.MeshBasicMaterial({ map: BLOB_TEX, transparent: true, depthWrite: false, opacity: 0.55 }));
     f.blob.renderOrder = 1; scene.add(f.blob);

@@ -130,7 +130,9 @@ body.dying canvas#c { filter: saturate(0.1) contrast(1.06) brightness(0.88); tra
 #bLock.on, #bLock.active { border-color: var(--straw); }
 #lockMark { position: fixed; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
 #lockMark.on { opacity: 0.9; }
-#lockMark svg { width: 100%; height: 100%; fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(0,0,0,0.7)); animation: lockspin 6s linear infinite; }
+#lockMark svg { width: 100%; height: 100%; fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(0,0,0,0.7)); }
+#lockMark.on svg { animation: lockspin 6s linear infinite; }
+#lockMark:not(.on) { visibility: hidden; }
 #lockMark svg circle { fill: var(--ink); stroke: none; }
 @keyframes lockspin { to { transform: rotate(360deg); } }
 #menuBtn { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); width: 38px; height: 38px;
@@ -141,7 +143,7 @@ body.dying canvas#c { filter: saturate(0.1) contrast(1.06) brightness(0.88); tra
   padding: calc(6vh + env(safe-area-inset-top, 0px)) calc(6vw + env(safe-area-inset-right, 0px)) calc(7vh + env(safe-area-inset-bottom, 0px)) calc(6vw + env(safe-area-inset-left, 0px));
   background: linear-gradient(to top, rgba(24, 15, 6, 0.82) 0%, rgba(24, 15, 6, 0.4) 38%, rgba(24, 15, 6, 0) 62%), linear-gradient(to right, rgba(24, 15, 6, 0.35), rgba(24,15,6,0) 45%);
   color: var(--ink); transition: opacity 0.9s ease; }
-#start.gone { opacity: 0; pointer-events: none; }
+#start.gone { opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
 #start h1 { font-family: 'Shippori Mincho', 'Iowan Old Style', Georgia, serif; font-weight: 700;
   font-size: clamp(42px, 8vw, 108px); line-height: 0.92; letter-spacing: -0.015em; margin: 0 0 0.26em; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
   animation: rise 2.2s ease both; }

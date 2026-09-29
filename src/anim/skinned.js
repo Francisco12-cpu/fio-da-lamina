@@ -104,22 +104,29 @@ function partMaterial(cols) {
 const _p = new THREE.Vector3(), _p2 = new THREE.Vector3(), _p3 = new THREE.Vector3(), _d = new THREE.Vector3(), _pole = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _qp = new THREE.Quaternion(), _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4();
 const _ax = new THREE.Vector3(), _s = new THREE.Vector3();
+const _qc = new THREE.Quaternion(), _qc2 = new THREE.Quaternion();
 const AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
 
 // gira um osso em torno de um eixo do mundo (mantendo a hierarquia)
+// (as matrizes do pai precisam estar em dia; só o próprio osso é atualizado — os filhos são
+// atualizados quando alguém precisar deles, e de todo modo no desenho)
+const _pm = new THREE.Matrix4(), _ps = new THREE.Vector3(), _pp = new THREE.Vector3();
+function parentWorldQuat(bone, out) { bone.parent.matrixWorld.decompose(_pp, out, _ps); return out; }
+function applyWorldRot(bone, qW) {
+  parentWorldQuat(bone, _qp);
+  // local' = pai⁻¹ · rot · pai · local
+  _q2.copy(_qp).invert().multiply(qW).multiply(_qp).multiply(bone.quaternion);
+  bone.quaternion.copy(_q2);
+  bone.updateWorldMatrix(false, false);
+}
 function rotateWorld(bone, axisW, ang) {
   if (Math.abs(ang) < 1e-5) return;
-  bone.parent.getWorldQuaternion(_qp);
-  _q.setFromAxisAngle(axisW, ang);
-  bone.getWorldQuaternion(_q2);
-  _q2.premultiply(_q);
-  bone.quaternion.copy(_qp.invert().multiply(_q2));
-  bone.updateMatrixWorld(true);
+  applyWorldRot(bone, _q.setFromAxisAngle(axisW, ang));
 }
 function setWorldQuat(bone, qW) {
-  bone.parent.getWorldQuaternion(_qp);
+  parentWorldQuat(bone, _qp);
   bone.quaternion.copy(_qp.invert().multiply(qW));
-  bone.updateMatrixWorld(true);
+  bone.updateWorldMatrix(false, false);
 }
 // gira o osso para que o ponto "from" (filho) aponte para "to"
 function aimBone(bone, from, to) {
@@ -127,7 +134,7 @@ function aimBone(bone, from, to) {
   const a = _d.subVectors(from, _p3).normalize(), b = _s.subVectors(to, _p3).normalize();
   if (a.lengthSq() < 1e-8 || b.lengthSq() < 1e-8) return;
   _q.setFromUnitVectors(a, b);
-  bone.getWorldQuaternion(_q2); _q2.premultiply(_q);
+  parentWorldQuat(bone, _qp); _q2.copy(_qp).multiply(bone.quaternion).premultiply(_q);
   setWorldQuat(bone, _q2);
 }
 
@@ -265,12 +272,11 @@ export class SkinnedController extends ProceduralController {
     this.model.updateMatrixWorld(true);
     // tronco: inclinação, torção e respiração por cima do clipe (divididas entre as vértebras)
     if (!full) {
-      f.root.updateMatrixWorld(true);
       const rq = f.root.quaternion;
       const ax = _ax.copy(AX.x).applyQuaternion(rq), ay = AX.y, az = _pole.copy(AX.z).applyQuaternion(rq);
-      for (const b of [B.spine_01, B.spine_02, B.spine_03]) {
-        rotateWorld(b, ax, (-f.lean * 0.6) / 3); rotateWorld(b, ay, f.twist / 3); rotateWorld(b, az, f.roll / 3);
-      }
+      // uma rotação combinada por vértebra (inclinação, torção, lado)
+      _qc.setFromAxisAngle(ax, (-f.lean * 0.6) / 3).multiply(_qc2.setFromAxisAngle(ay, f.twist / 3)).multiply(_qc2.setFromAxisAngle(az, f.roll / 3));
+      for (const b of [B.spine_01, B.spine_02, B.spine_03]) { b.updateWorldMatrix(false, false); applyWorldRot(b, _qc); }
       if (k.breathY) rotateWorld(B.spine_03, ax, -k.breathY * 3);
       rotateWorld(B.neck_01, ay, -f.twist * 0.6);
       this.levelHead(k, 0.7);
@@ -328,12 +334,13 @@ export class SkinnedController extends ProceduralController {
     // com a mão alcançando, o corpo volta ao lugar em ~0,15 s; durante o golpe a correção é imediata
     this.offs.lerp(want, need > 0 && this.f.state === 'attack' ? 1 : 1 - Math.exp(-dt * 14));
     this.model.position.set(this.offs.x, this.baseY + this.offs.y, this.offs.z);
-    this.model.updateMatrixWorld(true);
+    this.model.updateWorldMatrix(false, false); // a cadeia do braço é refeita no IK
   }
   // IK de dois ossos: ombro-cotovelo-pulso, cotovelo no plano do "polo"
   solve(arm, wristM, pole, posOnly) {
     const target = posOnly ? posOnly : _p.setFromMatrixPosition(wristM);
     const up = arm.up, lo = arm.lo, ha = arm.ha;
+    up.updateWorldMatrix(true, false);
     up.getWorldPosition(_p2);
     const l1 = arm.l1, l2 = arm.l2;
     const dv = _d.subVectors(target, _p2); let d = dv.length();

@@ -72,10 +72,17 @@ if (!URLP.has('boneco')) {
   catch (e) { console.warn('modelo 3D indisponível, usando o boneco', e); }
 }
 Hdri.load().catch((e) => console.warn('HDRI', e));
+// o mundo parado não recalcula matrizes a cada quadro (pedras, árvores, terreno, grama…)
+scene.traverse((o) => {
+  if (o === scene || o.isLight || o === sunLight.target || o.userData.dynamic) return;
+  o.updateMatrix(); o.matrixAutoUpdate = false;
+});
+scene.updateMatrixWorld(true);
 const player = (G.player = new Player(new THREE.Vector3(CLEARING.x, 0, CLEARING.z + 5)));
 const dummy = (G.dummy = new Dummy(DUMMY_POS.x, DUMMY_POS.z));
 G.Encounters = Encounters; G.Game = Game; G.Standoff = Standoff; G.Training = Training;
 Encounters.init();
+Encounters.enemies.forEach((e, i) => (e.sleepSlot = i));
 const rig = (G.rig = new CameraRig());
 rig.snap(player.pos);
 Input.init();
@@ -144,15 +151,24 @@ Input.onUnlock = () => Pause.open();
 document.getElementById('menuBtn').addEventListener('click', (e) => { e.stopPropagation(); if (Input.enabled) Pause.toggle(); else Panel.toggle(); });
 
 const tmpV = new THREE.Vector3();
-let breathT = 0;
+let breathT = 0, frameN = 0;
 const TEST = URLP.has('test');
-function render() { if (Quality.post) composer.render(); else renderer.render(scene, camera); }
+// medição de desempenho (tests/perf.mjs): tempo de simulação e de desenho por quadro
+const PERF = URLP.has('perf') ? (window.__perf = []) : null;
+let shadowTick = 0;
+function render() {
+  // celular (baixa/mínima): a sombra do sol é refeita a cada 2 quadros — o sol não se move,
+  // só os personagens, e meio quadro de atraso na sombra não se nota
+  if (Quality.tier <= 1) { renderer.shadowMap.autoUpdate = false; if (++shadowTick % 2 === 0 || TEST) renderer.shadowMap.needsUpdate = true; }
+  else renderer.shadowMap.autoUpdate = true;
+  if (Quality.post) composer.render(); else renderer.render(scene, camera);
+}
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = (now - clock.last) / 1000; clock.last = now;
   dt = Math.min(dt, 0.05);
-  update(dt);
-  render();
+  if (PERF) { const a = performance.now(); update(dt); const b = performance.now(); render(); PERF.push([b - a, performance.now() - b]); if (PERF.length > 4000) PERF.shift(); }
+  else { update(dt); render(); }
   Quality.frame(dt);
   fpsAcc += dt; fpsN++; fpsT += dt;
   if (fpsT > 0.5) { stats.textContent = `${Math.round(fpsN / fpsAcc)} fps, qualidade ${TIERS[Quality.tier].name}`; fpsAcc = 0; fpsN = 0; fpsT = 0; }
@@ -169,7 +185,20 @@ function update(realDt) {
   const targets = [dummy];
   for (const e of Encounters.enemies) if (e.alive) targets.push(e);
   const speed = Standoff.active ? Standoff.update(dt, simT) : player.tick(dt, simT, rig.yaw, targets);
-  for (const e of Encounters.enemies) if (!(Standoff.active && e === Standoff.e)) e.tick(dt, simT, player);
+  frameN++;
+  for (const e of Encounters.enemies) {
+    if (Standoff.active && e === Standoff.e) continue;
+    // longe e parado (sem lutar): "dorme" — atualiza a cada 20 quadros e some além da neblina.
+    // Um inimigo atento, perto, ou no meio de uma ação nunca dorme.
+    const d2 = e.pos.distanceToSquared(player.pos);
+    const idle = !e.aware && (e.state === 'move' || (e.state === 'dead' && e.st > 4)) && e.vel.lengthSq() < 1e-4;
+    const sleep = idle && d2 > 40 * 40;
+    e.root.visible = e.cloth.mesh.visible = e.blob.visible = d2 < 110 * 110 || !idle;
+    e.root.matrixWorldAutoUpdate = !sleep || (frameN + e.sleepSlot) % 20 === 0; // dormindo: ossos não são recalculados no desenho
+    if (sleep && (frameN + e.sleepSlot) % 20 !== 0) { e.sleepDt = (e.sleepDt || 0) + dt; continue; }
+    const edt = sleep ? Math.min(e.sleepDt + dt, 0.05) : dt; e.sleepDt = 0;
+    e.tick(edt, simT, player);
+  }
   Bind.update(dt, simT);
   dummy.update(dt, simT, player);
   // ferido: respiração pesada
@@ -240,5 +269,5 @@ if (!URLP.has('test')) Panel.init();
 if (!TEST) Title.begin(); else Title.active = false;
 if (!TEST) requestAnimationFrame((n) => { clock.last = n; frame(n); });
 document.getElementById('loading').classList.add('gone');
-window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Title, Pause, Hdri, grass: [grassNear, grassMid], scene, Combat, Bind, Mastery, Rules, get simT() { return simT; },
+window.__game = { Standoff, Panel, TOD, Report, update, render, player, dummy, rig, Input, Quality, Training, Time, Encounters, Director, Stats, Game, Habits, terrain, camera, start, Lock, Later, UI, Title, Pause, Hdri, renderer, grass: [grassNear, grassMid], scene, Combat, Bind, Mastery, Rules, get simT() { return simT; },
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) update(dt); render(); } };

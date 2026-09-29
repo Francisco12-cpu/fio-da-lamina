@@ -1,0 +1,24 @@
+// Perfil de CPU (funções com mais tempo próprio) numa luta em grupo. Uso: node tests/profile.mjs [nível] [cpu]
+import { chromium } from 'playwright';
+import { chromePath, viteServer } from './lib/harness.mjs';
+const q = process.argv[2] || '1', thr = +(process.argv[3] || 1), url0 = process.argv[4] || 'http://localhost:5174/', extra = process.argv[5] || '', enc = +(process.argv[6] || 4);
+const v = url0.includes('5175') ? await (await import('./lib/harness.mjs')).staticServer(5175) : await viteServer(5174);
+const b = await chromium.launch({ executablePath: chromePath(), args: ['--use-angle=d3d11', '--ignore-gpu-blocklist', '--enable-gpu'] });
+const ctx = await b.newContext({ viewport: { width: 800, height: 370 }, deviceScaleFactor: 2.625, isMobile: true, hasTouch: true });
+const pg = await ctx.newPage();
+await pg.addInitScript(() => { HTMLCanvasElement.prototype.requestPointerLock = () => Promise.resolve(); });
+await pg.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+await pg.goto(`${url0}?q=${q}&noaudio&perf${extra}`);
+await pg.waitForFunction(() => window.__game, null, { timeout: 120000 });
+const cdp = await ctx.newCDPSession(pg);
+await cdp.send('Emulation.setCPUThrottlingRate', { rate: thr });
+await pg.evaluate(async (enc) => { const g = __game; g.start(); const E = g.Encounters.list[enc]; g.player.respawn({ x: E.center.x, z: E.center.z + 8 }, 0); g.rig.snap(g.player.pos); await new Promise((ok) => setTimeout(ok, 2000)); }, enc);
+await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 200 }); await cdp.send('Profiler.start');
+await pg.waitForTimeout(5000);
+const { profile } = await cdp.send('Profiler.stop');
+const self = new Map(), dt = profile.timeDeltas; const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+profile.samples.forEach((id, i) => { const n = byId.get(id); const k = `${n.callFrame.functionName || '(anon)'} ${n.callFrame.url.split('/').pop()}:${n.callFrame.lineNumber}`; self.set(k, (self.get(k) || 0) + (dt[i] || 0)); });
+const tot = [...self.values()].reduce((a, b) => a + b, 0);
+console.log([...self.entries()].sort((a, b) => b[1] - a[1]).slice(0, 28).map(([k, t]) => `${(100 * t / tot).toFixed(1).padStart(5)}%  ${k}`).join('\n'));
+//console.log('info', JSON.stringify(await pg.evaluate(() => { const r = __game.renderer ? __game.renderer.info.render : null; return r; })));
+await b.close(); await v.close();

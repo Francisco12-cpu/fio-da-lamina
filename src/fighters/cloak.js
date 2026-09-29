@@ -10,7 +10,10 @@ import { withRim } from '../world/world.js';
    Congela junto com o hitstop (dt = 0), o que realça o impacto.
    ================================================================ */
 export const _ca = new THREE.Vector3(), _cb = new THREE.Vector3();
+// iterações do pano (4 em média/alta; 2 em baixa/mínima, definido pela qualidade)
 export class Cloak {
+  static iters = 4;
+  static half = false;
   constructor(f, color) {
     this.f = f;
     const C = (this.C = 14), R = (this.R = 6), n = (this.n = C * (R + 1));
@@ -57,6 +60,8 @@ export class Cloak {
   }
   update(dt, t) {
     if (dt <= 0) return;
+    // celular: o pano é simulado a 30 Hz (a cada 2 quadros, com o passo somado)
+    if (Cloak.half) { this.acc = (this.acc || 0) + dt; if ((this.tick = (this.tick || 0) + 1) % 2) return; dt = this.acc; this.acc = 0; }
     if (dt > 0.1) { this.reset(); return; }
     const steps = dt > 1 / 40 ? 2 : 1, h = dt / steps, h2 = h * h;
     const m = this.f.torso.matrixWorld, p = this.p, q = this.q, C = this.C, n = this.n;
@@ -81,7 +86,7 @@ export class Cloak {
           p[k + d] = cur + v + (d === 0 ? wx * w : d === 1 ? -9.8 : wz * w) * h2 + (tgt - cur) * shape;
         }
       }
-      for (let it = 0; it < 4; it++) {
+      for (let it = 0; it < Cloak.iters; it++) {
         for (const [i, j, L, st] of this.cons) {
           const wi = i < C ? 0 : 1, wj = j < C ? 0 : 1, ws = wi + wj;
           if (!ws) continue;

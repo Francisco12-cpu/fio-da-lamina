@@ -63,9 +63,9 @@ Pronto: screenshots lado a lado, bots dentro das metas, FPS medido.
 - [x] Carregador de sons gravados com reserva sintetizada; carregador de HDRI com reserva no céu atual.
 (Não há arquivos em `assets/sounds` nem `assets/hdri`: fica o código pronto e testado com a reserva.)
 
-### Fase 7 — performance e celular
-- [ ] Medir FPS nos 4 níveis, com CPU limitada (4×/6×) simulando Android intermediário.
-- [ ] GLB comprimido (Meshopt) e tela de carregamento com progresso.
+### Fase 7 — performance e celular ✅
+- [x] Medir FPS nos 4 níveis, com CPU limitada (4×/6×) simulando Android intermediário.
+- [x] GLB comprimido (Meshopt) e tela de carregamento com progresso.
 
 ### Fase 8 — entrega
 - [ ] Todos os testes verdes; screenshots finais em `tests/screens/final`.
